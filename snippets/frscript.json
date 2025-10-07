@@ -1,0 +1,262 @@
+{
+  "Function Declaration": {
+    "prefix": "func",
+    "body": [
+      "${1|void,int,float,str,bool,list,any|} ${2:functionName}(${3:args}) {",
+      "\t${4:// TODO: implementation}",
+      "\t$0",
+      "}"
+    ],
+    "description": "Create a function declaration"
+  },
+  "Function with Return": {
+    "prefix": "funcr",
+    "body": [
+      "${1|int,float,str,bool,list,any|} ${2:functionName}(${3:args}) {",
+      "\t${4:// TODO: implementation}",
+      "\treturn ${5:value}",
+      "}"
+    ],
+    "description": "Create a function with return statement"
+  },
+  "Main Function": {
+    "prefix": "main",
+    "body": [
+      "void main(${1:str argv}) {",
+      "\t$0",
+      "}"
+    ],
+    "description": "Create main function"
+  },
+  "If Statement": {
+    "prefix": "if",
+    "body": [
+      "if (${1:condition}) {",
+      "\t$0",
+      "}"
+    ],
+    "description": "If statement"
+  },
+  "If-Else Statement": {
+    "prefix": "ife",
+    "body": [
+      "if (${1:condition}) {",
+      "\t${2}",
+      "} else {",
+      "\t$0",
+      "}"
+    ],
+    "description": "If-else statement"
+  },
+  "If-Elif-Else Statement": {
+    "prefix": "ifel",
+    "body": [
+      "if (${1:condition}) {",
+      "\t${2}",
+      "} elif (${3:condition}) {",
+      "\t${4}",
+      "} else {",
+      "\t$0",
+      "}"
+    ],
+    "description": "If-elif-else statement"
+  },
+  "While Loop": {
+    "prefix": "while",
+    "body": [
+      "while (${1:condition}) {",
+      "\t$0",
+      "}"
+    ],
+    "description": "While loop"
+  },
+  "For Range Loop": {
+    "prefix": "for",
+    "body": [
+      "for (${1:i} in ${2:0}..${3:10}) {",
+      "\t$0",
+      "}"
+    ],
+    "description": "For loop with range"
+  },
+  "For Range with Step": {
+    "prefix": "fors",
+    "body": [
+      "for (${1:i} in ${2:0}..${3:10}..${4:1}) {",
+      "\t$0",
+      "}"
+    ],
+    "description": "For loop with range and step"
+  },
+  "For-In Loop": {
+    "prefix": "forin",
+    "body": [
+      "for (${1:item} in ${2:collection}) {",
+      "\t$0",
+      "}"
+    ],
+    "description": "For-in loop over collection"
+  },
+  "Switch Statement": {
+    "prefix": "switch",
+    "body": [
+      "switch (${1:variable}) {",
+      "\tcase ${2:value}:",
+      "\t\t${3}",
+      "\tdefault:",
+      "\t\t${4}",
+      "}"
+    ],
+    "description": "Switch statement"
+  },
+  "Struct Definition": {
+    "prefix": "struct",
+    "body": [
+      "struct ${1:Name} {",
+      "\t${2|int,float,str,bool,list|} ${3:field}",
+      "\t$0",
+      "}"
+    ],
+    "description": "Define a struct"
+  },
+  "Variable Declaration": {
+    "prefix": "var",
+    "body": [
+      "${1|int,float,str,bool,list,dict,any|} ${2:name} = ${3:value}"
+    ],
+    "description": "Declare a variable"
+  },
+  "Constant Declaration": {
+    "prefix": "const",
+    "body": [
+      "const ${1|int,float,str,bool|} ${2:NAME} = ${3:value}"
+    ],
+    "description": "Declare a constant"
+  },
+  "Print Statement": {
+    "prefix": "print",
+    "body": [
+      "println(${1:value})"
+    ],
+    "description": "Print with newline"
+  },
+  "F-String": {
+    "prefix": "fstr",
+    "body": [
+      "f\"${1:text} {${2:variable}}$3\""
+    ],
+    "description": "Create an f-string"
+  },
+  "Print F-String": {
+    "prefix": "printf",
+    "body": [
+      "println(f\"${1:text} {${2:variable}}$3\")"
+    ],
+    "description": "Print an f-string"
+  },
+  "List Declaration": {
+    "prefix": "list",
+    "body": [
+      "list ${1:name} = [${2:items}]"
+    ],
+    "description": "Declare a list"
+  },
+  "Dict Declaration": {
+    "prefix": "dict",
+    "body": [
+      "dict ${1:name} = {${2:items}}"
+    ],
+    "description": "Declare a dictionary"
+  },
+  "Assert Statement": {
+    "prefix": "assert",
+    "body": [
+      "assert(${1:condition}${2:, \"${3:message}\"})"
+    ],
+    "description": "Assert statement"
+  },
+  "Python Import": {
+    "prefix": "pyimport",
+    "body": [
+      "py_import ${1:module}${2: as ${3:alias}}"
+    ],
+    "description": "Import Python module"
+  },
+  "Python Import From": {
+    "prefix": "pyfrom",
+    "body": [
+      "from ${1:module} py_import ${2:name}${3: as ${4:alias}}"
+    ],
+    "description": "Import from Python module"
+  },
+  "Python Call": {
+    "prefix": "pycall",
+    "body": [
+      "py_call(\"${1:module}\", \"${2:function}\", ${3:args})"
+    ],
+    "description": "Call Python function"
+  },
+  "PyObject Declaration": {
+    "prefix": "pyobj",
+    "body": [
+      "pyobject ${1:name} = ${2:value}"
+    ],
+    "description": "Declare a Python object"
+  },
+  "File Open": {
+    "prefix": "fopen",
+    "body": [
+      "int ${1:fd} = fopen(\"${2:path}\"${3:, \"${4:r}\"})"
+    ],
+    "description": "Open a file"
+  },
+  "File Read": {
+    "prefix": "fread",
+    "body": [
+      "str ${1:content} = fread(${2:fd}${3:, -1})"
+    ],
+    "description": "Read from file"
+  },
+  "Socket Create": {
+    "prefix": "socket",
+    "body": [
+      "int ${1:sock} = socket(\"${2:inet}\", \"${3:stream}\")"
+    ],
+    "description": "Create a socket"
+  },
+  "HTTP Server Template": {
+    "prefix": "httpserver",
+    "body": [
+      "void main() {",
+      "\tint sock = socket(\"inet\", \"stream\")",
+      "\tsetsockopt(sock, \"SOL_SOCKET\", \"SO_REUSEADDR\", 1)",
+      "\tbind(sock, \"${1:127.0.0.1}\", ${2:8080})",
+      "\tlisten(sock, ${3:5})",
+      "\t",
+      "\twhile (true) {",
+      "\t\tint cs = accept(sock)",
+      "\t\tstr request = recv(cs, 4096)",
+      "\t\t",
+      "\t\t${4:// Handle request}",
+      "\t\t",
+      "\t\tstr response = \"HTTP/1.1 200 OK\\\\r\\\\n\\\\r\\\\n${5:Hello}\"",
+      "\t\tsend(cs, response)",
+      "\t\tsclose(cs)",
+      "\t}",
+      "\t",
+      "\tsclose(sock)",
+      "}"
+    ],
+    "description": "HTTP server template"
+  },
+  "Comment Header": {
+    "prefix": "header",
+    "body": [
+      "// ============================================",
+      "// ${1:SECTION NAME}",
+      "// ============================================",
+      "$0"
+    ],
+    "description": "Create a section header comment"
+  }
+}

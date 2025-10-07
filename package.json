@@ -1,0 +1,339 @@
+{
+  "name": "frscript",
+  "displayName": "Frscript Extension",
+  "description": "VSCode Extension for Frscript with advanced features.",
+  "version": "2.2.0",
+  "publisher": "omena0",
+  "engines": {
+    "vscode": "^1.60.0"
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "package": "vsce package"
+  },
+  "main": "./out/extension.js",
+  "activationEvents": [
+    "onLanguage:frscript",
+    "onDebug",
+    "onStartupFinished",
+    "onCommand:frscript.showDebugOutput"
+  ],
+  "categories": [
+    "Programming Languages",
+    "Snippets",
+    "Debuggers"
+  ],
+  "keywords": [
+    "frscript",
+    "fr",
+    "syntax",
+    "highlighting",
+    "autocomplete",
+    "intellisense"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "frscript",
+        "aliases": [
+          "Frscript",
+          "Fr"
+        ],
+        "extensions": [
+          ".fr"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "frscript",
+        "scopeName": "source.fr",
+        "path": "./syntaxes/frscript.tmLanguage.json"
+      }
+    ],
+    "snippets": [
+      {
+        "language": "frscript",
+        "path": "./snippets/frscript.json"
+      }
+    ],
+    "breakpoints": [
+      {
+        "language": "frscript"
+      }
+    ],
+    "debuggers": [
+      {
+        "type": "frscript",
+        "label": "Frscript Debug",
+        "program": "./out/debugAdapter.js",
+        "runtime": "node",
+        "configurationAttributes": {
+          "launch": {
+            "required": [
+              "program"
+            ],
+            "properties": {
+              "program": {
+                "type": "string",
+                "description": "Absolute path to the Frscript file to debug.",
+                "default": "${file}"
+              },
+              "stopOnEntry": {
+                "type": "boolean",
+                "description": "Automatically stop after launch.",
+                "default": true
+              },
+              "trace": {
+                "type": "boolean",
+                "description": "Enable logging of the Debug Adapter Protocol.",
+                "default": false
+              }
+            }
+          }
+        },
+        "initialConfigurations": [
+          {
+            "type": "frscript",
+            "request": "launch",
+            "name": "Debug Frscript File",
+            "program": "${file}",
+            "stopOnEntry": true
+          }
+        ],
+        "configurationSnippets": [
+          {
+            "label": "Frscript Debug: Launch",
+            "description": "A new configuration for debugging a Frscript file.",
+            "body": {
+              "type": "frscript",
+              "request": "launch",
+              "name": "Debug Frscript File",
+              "program": "^\"\\${file}\"",
+              "stopOnEntry": true
+            }
+          }
+        ]
+      }
+    ],
+    "commands": [
+      {
+        "command": "frscript.runCurrentFile",
+        "title": "Run Current File",
+        "category": "Frscript"
+      },
+      {
+        "command": "frscript.buildCurrentFile",
+        "title": "Build Current File",
+        "category": "Frscript"
+      },
+      {
+        "command": "frscript.generateDocumentation",
+        "title": "Generate Documentation for Function",
+        "category": "Frscript"
+      },
+      {
+        "command": "frscript.generateAllDocumentation",
+        "title": "Generate Documentation for All Functions",
+        "category": "Frscript"
+      },
+      {
+        "command": "frscript.extractFunction",
+        "title": "Extract Function",
+        "category": "Frscript"
+      },
+      {
+        "command": "frscript.extractVariable",
+        "title": "Extract Variable",
+        "category": "Frscript"
+      },
+      {
+        "command": "frscript.inlineVariable",
+        "title": "Inline Variable",
+        "category": "Frscript"
+      },
+      {
+        "command": "frscript.convertToTypedParameters",
+        "title": "Convert to Typed Parameters",
+        "category": "Frscript"
+      },
+      {
+        "command": "frscript.organizeImports",
+        "title": "Organize Imports",
+        "category": "Frscript"
+      },
+      {
+        "command": "frscript.showMetrics",
+        "title": "Show Code Metrics",
+        "category": "Frscript"
+      },
+      {
+        "command": "frscript.showDebugOutput",
+        "title": "Show Debug Output",
+        "category": "Frscript"
+      },
+      {
+        "command": "frscript.findSymbol",
+        "title": "Find Symbol in Workspace",
+        "category": "Frscript"
+      },
+      {
+        "command": "frscript.generateRequirementsTxt",
+        "title": "Generate requirements.txt",
+        "category": "Frscript"
+      },
+      {
+        "command": "frscript.showDependencies",
+        "title": "Show Python Dependencies",
+        "category": "Frscript"
+      },
+      {
+        "command": "frscript.insertColor",
+        "title": "Insert Color",
+        "category": "Frscript"
+      }
+    ],
+    "configuration": {
+      "title": "Frscript",
+      "properties": {
+        "frscript.formatting.indentSize": {
+          "type": "number",
+          "default": 4,
+          "description": "Number of spaces for indentation"
+        },
+        "frscript.formatting.insertSpaces": {
+          "type": "boolean",
+          "default": true,
+          "description": "Use spaces instead of tabs"
+        },
+        "frscript.linting.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable linting"
+        },
+        "frscript.linting.unusedVariables": {
+          "type": "string",
+          "enum": [
+            "error",
+            "warning",
+            "hint"
+          ],
+          "default": "warning",
+          "description": "Severity for unused variables"
+        },
+        "frscript.linting.unusedImports": {
+          "type": "string",
+          "enum": [
+            "error",
+            "warning",
+            "hint"
+          ],
+          "default": "warning",
+          "description": "Severity for unused imports"
+        },
+        "frscript.metrics.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable code metrics"
+        },
+        "frscript.metrics.maxComplexity": {
+          "type": "number",
+          "default": 10,
+          "description": "Maximum cyclomatic complexity"
+        },
+        "frscript.metrics.maxFunctionLength": {
+          "type": "number",
+          "default": 50,
+          "description": "Maximum function length in lines"
+        },
+        "frscript.metrics.maxNestingDepth": {
+          "type": "number",
+          "default": 4,
+          "description": "Maximum nesting depth"
+        },
+        "frscript.python.validateImports": {
+          "type": "boolean",
+          "default": true,
+          "description": "Validate Python imports"
+        },
+        "frscript.python.suggestImports": {
+          "type": "boolean",
+          "default": true,
+          "description": "Suggest Python imports"
+        },
+        "frscript.debug.enableConsole": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable debug console"
+        },
+        "frscript.debug.showVariableTypes": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show variable types in debug"
+        },
+        "frscript.documentation.autoGenerate": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically generate documentation"
+        },
+        "frscript.documentation.includeExamples": {
+          "type": "boolean",
+          "default": true,
+          "description": "Include examples in documentation"
+        }
+      }
+    },
+    "taskDefinitions": [
+      {
+        "type": "frscript",
+        "required": [
+          "task"
+        ],
+        "properties": {
+          "task": {
+            "type": "string",
+            "description": "The task to execute (run or build)"
+          },
+          "file": {
+            "type": "string",
+            "description": "The file to process"
+          }
+        }
+      }
+    ],
+    "problemMatchers": [
+      {
+        "name": "frscript",
+        "owner": "frscript",
+        "fileLocation": [
+          "relative",
+          "${workspaceFolder}"
+        ],
+        "pattern": {
+          "regexp": "^(.*):(\\d+):(\\d+):\\s+(warning|error):\\s+(.*)$",
+          "file": 1,
+          "line": 2,
+          "column": 3,
+          "severity": 4,
+          "message": 5
+        }
+      }
+    ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Omena0/fr"
+  },
+  "license": "PolyForm-Noncommercial-1.0.0",
+  "dependencies": {
+    "@vscode/debugadapter": "^1.68.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.7.0",
+    "@types/vscode": "^1.60.0",
+    "@vscode/debugprotocol": "^1.68.0",
+    "typescript": "^5.9.3"
+  }
+}
