@@ -145,7 +145,7 @@
       "patterns": [
         {
           "name": "keyword.control.fr",
-          "match": "\\b(if|elif|else|while|for|in|switch|case|default|break|continue|return|assert)\\b"
+          "match": "\\b(if|elif|else|while|for|in|switch|case|default|break|continue|return|assert|try|except)\\b"
         },
         {
           "name": "keyword.other.fr",
