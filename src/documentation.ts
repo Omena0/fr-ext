@@ -191,7 +191,7 @@ export class DocumentationProvider {
                 return;
             }
 
-            const document = editor.document;
+            const {document} = editor;
             const edit = new vscode.WorkspaceEdit();
             let count = 0;
 

@@ -27,7 +27,7 @@ export class DependencyManager {
         const imports = extractPythonImports(document);
 
         imports.forEach((value, key) => {
-            const module = value.module;
+            const {module} = value;
             
             if (this.dependencies.has(module)) {
                 const dep = this.dependencies.get(module)!;

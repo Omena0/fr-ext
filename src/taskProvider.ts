@@ -21,7 +21,7 @@ export class FrscriptTaskProvider implements vscode.TaskProvider {
 
         this.tasks = [];
 
-        const workspaceFolders = vscode.workspace.workspaceFolders;
+        const {workspaceFolders} = vscode.workspace;
         if (!workspaceFolders) {
             return this.tasks;
         }

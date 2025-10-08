@@ -1599,7 +1599,12 @@ export function activate(context: vscode.ExtensionContext) {
                 const line = document.lineAt(i);
                 const {text} = line;
 
-                // Match function calls
+                // Skip function definitions (lines that start with a return type)
+                if (text.match(/^\s*(void|int|float|str|string|bool|list|dict|set|any|pyobject|pyobj|func)\s+\w+\s*\(/)) {
+                    continue;
+                }
+
+                // Match function calls only
                 const funcCallRegex = /(\w+)\s*\(([^)]*)\)/g;
                 let match;
 

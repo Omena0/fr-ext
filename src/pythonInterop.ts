@@ -504,7 +504,7 @@ export function createPythonInteropDiagnostics(
 
     for (let i = 0; i < document.lineCount; i++) {
         const line = document.lineAt(i);
-        const text = line.text;
+        const {text} = line;
 
         // Check for py_call with potentially undefined modules
         const pyCallMatch = text.match(/py_call\s*\(\s*"([^"]+)"/);
@@ -535,7 +535,7 @@ export function createPythonInteropDiagnostics(
                 
                 // Subtract 1 for the import declaration itself
                 if (uses.length <= 1) {
-                    const range = line.range;
+                    const {range} = line;
                     const diagnostic = new vscode.Diagnostic(
                         range,
                         `Python import '${moduleName}' is never used`,

@@ -29,7 +29,7 @@ export class MetricsProvider {
 
         for (let i = 0; i < document.lineCount; i++) {
             const line = document.lineAt(i);
-            const text = line.text;
+            const {text} = line;
 
             // Match function declarations
             const funcMatch = text.match(/^\s*(void|int|float|str|bool|list|dict|any|pyobject)\s+(\w+)\s*\(/);

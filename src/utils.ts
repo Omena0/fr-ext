@@ -189,8 +189,10 @@ export function findFunctionBody(document: vscode.TextDocument, functionLine: nu
 
 export function getIndentLevel(line: string): number {
     const match = line.match(/^(\s*)/);
-    if (!match) return 0;
-    
+    if (!match) {
+      return 0;
+    }
+
     const spaces = match[1].length;
     return Math.floor(spaces / 4); // Assuming 4 spaces per indent
 }

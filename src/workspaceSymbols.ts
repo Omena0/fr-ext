@@ -199,7 +199,7 @@ export function createFindSymbolCommand(): vscode.Disposable {
 
         if (symbols.length === 1) {
             // Jump directly
-            const location = symbols[0].location;
+            const {location} = symbols[0];
             await vscode.window.showTextDocument(location.uri, {
                 selection: location.range
             });
@@ -217,7 +217,7 @@ export function createFindSymbolCommand(): vscode.Disposable {
             });
 
             if (selected) {
-                const location = selected.symbol.location;
+                const {location} = selected.symbol;
                 await vscode.window.showTextDocument(location.uri, {
                     selection: location.range
                 });
