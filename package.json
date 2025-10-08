@@ -2,7 +2,7 @@
   "name": "frscript",
   "displayName": "Frscript Extension",
   "description": "VSCode Extension for Frscript with advanced features.",
-  "version": "2.2.1",
+  "version": "2.3.0",
   "publisher": "omena0",
   "engines": {
     "vscode": "^1.60.0"
