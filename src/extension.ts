@@ -438,8 +438,53 @@ function validateDocument(document: vscode.TextDocument) {
                 continue;
             }
 
+            // Find which function we're in to include its parameters
+            let currentFunction: SymbolInfo | undefined;
+            for (const func of userFunctions) {
+                if (func.line < i) {
+                    // Check if we're inside this function's body
+                    let braceCount = 0;
+                    let foundStart = false;
+                    for (let j = func.line; j <= i && j < document.lineCount; j++) {
+                        const funcLine = document.lineAt(j).text;
+                        for (const char of funcLine) {
+                            if (char === '{') {
+                                braceCount++;
+                                foundStart = true;
+                            } else if (char === '}') {
+                                braceCount--;
+                                if (foundStart && braceCount === 0) {
+                                    break;
+                                }
+                            }
+                        }
+                        if (j === i && braceCount > 0) {
+                            currentFunction = func;
+                            break;
+                        }
+                        if (foundStart && braceCount === 0) {
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // Build symbols list including function parameters
+            let symbolsForTypeChecking = [...symbols];
+            if (currentFunction && currentFunction.parameters) {
+                // Add function parameters as pseudo-variables for type checking
+                currentFunction.parameters.forEach(param => {
+                    symbolsForTypeChecking.push({
+                        name: param.name,
+                        type: 'variable',
+                        line: currentFunction!.line,
+                        varType: param.type
+                    });
+                });
+            }
+
             // Infer the type of the value
-            const inferredType = inferReturnType(value, symbols);
+            const inferredType = inferReturnType(value, symbolsForTypeChecking);
 
             // Skip if inferred type is 'any' (can be assigned to anything)
             // or if types match
