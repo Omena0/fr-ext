@@ -114,7 +114,6 @@ export class DocumentationProvider {
     ): vscode.MarkdownString {
         const markdown = new vscode.MarkdownString();
         markdown.isTrusted = true;
-        markdown.supportHtml = true;
 
         if (signature) {
             markdown.appendCodeblock(signature, 'frscript');

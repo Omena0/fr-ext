@@ -499,6 +499,25 @@ function validateDocument(document: vscode.TextDocument) {
             }
         }
 
+        // Parse local variables within the function
+        const localVars: SymbolInfo[] = [];
+        for (let i = funcStartLine + 1; i <= funcEndLine; i++) {
+            const line = document.lineAt(i).text;
+            const varMatch = line.match(/^\s*(int|float|str|bool|list|dict|any|pyobject|pyobj)\s+(\w+)\s*=/);
+            if (varMatch) {
+                localVars.push({
+                    name: varMatch[2],
+                    type: 'variable',
+                    line: i,
+                    varType: varMatch[1]
+                });
+            }
+        }
+
+        // Combine local variables with global symbols for type checking
+        // Put local vars first so they take precedence in lookups
+        const allSymbols = [...localVars, ...symbols];
+
         // Check all return statements in the function
         for (let i = funcStartLine + 1; i <= funcEndLine; i++) {
             const line = document.lineAt(i);
@@ -508,9 +527,11 @@ function validateDocument(document: vscode.TextDocument) {
             const returnMatch = text.match(/^\s*return\s+(.+?)$/);
             if (returnMatch) {
                 const returnValue = returnMatch[1].trim();
-                const inferredType = inferReturnType(returnValue, symbols);
+                const inferredType = inferReturnType(returnValue, allSymbols);
 
-                if (inferredType && inferredType !== func.returnType && func.returnType !== 'any') {
+                // Only flag type mismatches if we can confidently infer the type
+                // and it doesn't match the function's return type
+                if (inferredType && inferredType !== 'any' && inferredType !== func.returnType && func.returnType !== 'any') {
                     const returnPos = text.indexOf('return');
                     const valueStart = returnPos + 7; // length of "return "
                     const range = new vscode.Range(i, valueStart, i, text.length);
@@ -657,30 +678,66 @@ function inferReturnType(value: string, symbols: SymbolInfo[]): string | null {
 
         // Check built-in functions with known return types
         const builtinReturnTypes: Record<string, string> = {
+            // Type conversion functions
             'str': 'str',
             'int': 'int',
             'float': 'float',
             'bool': 'bool',
+            
+            // Collection functions
             'len': 'int',
+            'append': 'list',
+            'pop': 'any',
+            
+            // String functions
             'input': 'str',
             'split': 'list',
             'join': 'str',
+            'upper': 'str',
+            'lower': 'str',
+            'strip': 'str',
+            'replace': 'str',
+            
+            // Math functions
             'sqrt': 'float',
-            'abs': 'int',
+            'abs': 'any',
             'round': 'int',
             'floor': 'int',
             'ceil': 'int',
-            'pow': 'float',
-            'min': 'int',
-            'max': 'int',
-            'sum': 'int',
-            'range': 'list',
+            'pow': 'any',
+            'min': 'any',
+            'max': 'any',
+            'sin': 'float',
+            'cos': 'float',
+            'tan': 'float',
+            'PI': 'float',
+            'E': 'float',
+            
+            // File I/O functions
             'fopen': 'int',
             'fread': 'str',
+            'fwrite': 'int',
+            'exists': 'bool',
+            'isfile': 'bool',
+            'isdir': 'bool',
+            'listdir': 'list',
+            'getsize': 'int',
+            'getcwd': 'str',
+            'abspath': 'str',
+            'basename': 'str',
+            'dirname': 'str',
+            'pathjoin': 'str',
+            
+            // Socket functions
             'socket': 'int',
             'accept': 'int',
+            'send': 'int',
             'recv': 'str',
-            'py_call': 'any'  // py_call can return any type
+            
+            // Python interop
+            'py_call': 'any',
+            'py_getattr': 'any',
+            'py_call_method': 'any'
         };
 
         if (builtinReturnTypes[funcName]) {
