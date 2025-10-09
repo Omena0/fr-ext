@@ -94,7 +94,7 @@ const builtinFunctions: FunctionInfo[] = [
 ];
 
 const keywords = ['if', 'elif', 'else', 'while', 'for', 'in', 'switch', 'case', 'default', 'break', 'continue', 'return', 'assert', 'const', 'struct', 'py_import', 'from', 'as'];
-const types = ['void', 'int', 'float', 'str', 'string', 'bool', 'list', 'dict', 'set', 'any', 'pyobject', 'pyobj', 'func'];
+const types = ['void', 'int', 'float', 'str', 'string', 'bool', 'list', 'dict', 'set', 'any', 'pyobject', 'pyobj'];
 
 // Extract docstrings from document
 function parseDocstrings(document: vscode.TextDocument): Map<number, DocstringInfo> {
@@ -143,7 +143,7 @@ function parseSymbols(document: vscode.TextDocument): SymbolInfo[] {
         const { text } = line;
 
         // Match function declarations
-        const funcMatch = text.match(/^\s*(void|int|float|str|bool|list|dict|any|pyobject)\s+(\w+)\s*\(([^)]*)\)/);
+        const funcMatch = text.match(/^\s*(void|int|float|str|string|bool|list|dict|set|any|pyobject|pyobj)\s+(\w+)\s*\(([^)]*)\)/);
         if (funcMatch) {
             const doc = docstrings.get(i);
             const returnType = funcMatch[1];
@@ -157,7 +157,7 @@ function parseSymbols(document: vscode.TextDocument): SymbolInfo[] {
                 for (const param of paramList) {
                     const trimmedParam = param.trim();
                     // Try to match typed parameter: type name
-                    const typedMatch = trimmedParam.match(/^(void|int|float|str|bool|list|dict|any|pyobject|pyobj)\s+(\w+)$/);
+                    const typedMatch = trimmedParam.match(/^(void|int|float|str|string|bool|list|dict|set|any|pyobject|pyobj)\s+(\w+)$/);
                     if (typedMatch) {
                         parameters.push({
                             type: typedMatch[1],
@@ -203,7 +203,7 @@ function parseSymbols(document: vscode.TextDocument): SymbolInfo[] {
                 }
 
                 // Match field declaration: type name
-                const fieldMatch = fieldLine.match(/^\s*(void|int|float|str|string|bool|list|dict|any|pyobject|pyobj)\s+(\w+)\s*/);
+                const fieldMatch = fieldLine.match(/^\s*(void|int|float|str|string|bool|list|dict|set|any|pyobject|pyobj)\s+(\w+)\s*/);
                 if (fieldMatch) {
                     fields.push({
                         type: fieldMatch[1],
@@ -224,7 +224,7 @@ function parseSymbols(document: vscode.TextDocument): SymbolInfo[] {
         }
 
         // Match variable declarations
-        const varMatch = text.match(/^\s*(int|float|str|bool|list|dict|any|pyobject|pyobj)\s+(\w+)\s*=/);
+        const varMatch = text.match(/^\s*(int|float|str|string|bool|list|dict|set|any|pyobject|pyobj)\s+(\w+)\s*=/);
         if (varMatch) {
             symbols.push({
                 name: varMatch[2],
@@ -427,7 +427,7 @@ function validateDocument(document: vscode.TextDocument) {
         const {text} = line;
 
         // Match variable declarations with initialization: type name = value
-        const varDeclMatch = text.match(/^\s*(int|float|str|bool|list|dict|any|pyobject|pyobj)\s+(\w+)\s*=\s*(.+)$/);
+        const varDeclMatch = text.match(/^\s*(int|float|str|string|bool|list|dict|set|any|pyobject|pyobj)\s+(\w+)\s*=\s*(.+)$/);
         if (varDeclMatch) {
             const declaredType = varDeclMatch[1];
             const varName = varDeclMatch[2];
@@ -441,38 +441,44 @@ function validateDocument(document: vscode.TextDocument) {
             // Find which function we're in to include its parameters
             let currentFunction: SymbolInfo | undefined;
             for (const func of userFunctions) {
-                if (func.line < i) {
-                    // Check if we're inside this function's body
-                    let braceCount = 0;
-                    let foundStart = false;
-                    for (let j = func.line; j <= i && j < document.lineCount; j++) {
-                        const funcLine = document.lineAt(j).text;
-                        for (const char of funcLine) {
-                            if (char === '{') {
-                                braceCount++;
-                                foundStart = true;
-                            } else if (char === '}') {
-                                braceCount--;
-                                if (foundStart && braceCount === 0) {
-                                    break;
-                                }
+                if (func.line >= i) {
+                    continue; // Function is after this line
+                }
+                
+                // Find the end of this function by counting braces
+                let braceCount = 0;
+                let functionEnded = false;
+                for (let j = func.line; j <= i && j < document.lineCount; j++) {
+                    const checkLine = document.lineAt(j).text;
+                    for (const char of checkLine) {
+                        if (char === '{') {
+                            braceCount++;
+                        } else if (char === '}') {
+                            braceCount--;
+                            if (braceCount === 0) {
+                                // Function ended
+                                functionEnded = true;
+                                break;
                             }
                         }
-                        if (j === i && braceCount > 0) {
-                            currentFunction = func;
-                            break;
-                        }
-                        if (foundStart && braceCount === 0) {
-                            break;
-                        }
                     }
+                    if (functionEnded) {
+                        break;
+                    }
+                }
+                
+                // If we're still in this function at line i (didn't end and has opened)
+                if (!functionEnded && braceCount > 0) {
+                    currentFunction = func;
+                    break; // Found the containing function
                 }
             }
 
-            // Build symbols list including function parameters
-            let symbolsForTypeChecking = [...symbols];
+            // Build symbols list including function parameters.
+            // Place function parameters first so they shadow globals with the same name.
+            let symbolsForTypeChecking: SymbolInfo[] = [];
             if (currentFunction && currentFunction.parameters) {
-                // Add function parameters as pseudo-variables for type checking
+                // Add function parameters as pseudo-variables for type checking (take precedence)
                 currentFunction.parameters.forEach(param => {
                     symbolsForTypeChecking.push({
                         name: param.name,
@@ -482,6 +488,9 @@ function validateDocument(document: vscode.TextDocument) {
                     });
                 });
             }
+
+            // Then add the rest of the known symbols (globals, functions, structs, etc.)
+            symbolsForTypeChecking = symbolsForTypeChecking.concat([...symbols]);
 
             // Infer the type of the value
             const inferredType = inferReturnType(value, symbolsForTypeChecking);
@@ -544,11 +553,24 @@ function validateDocument(document: vscode.TextDocument) {
             }
         }
 
-        // Parse local variables within the function
+        // Parse local variables within the function and include parameters
         const localVars: SymbolInfo[] = [];
+
+        // First add function parameters so they take precedence over globals
+        if (func.parameters && func.parameters.length > 0) {
+            func.parameters.forEach(p => {
+                localVars.push({
+                    name: p.name,
+                    type: 'variable',
+                    line: func.line,
+                    varType: p.type
+                });
+            });
+        }
+
         for (let i = funcStartLine + 1; i <= funcEndLine; i++) {
             const line = document.lineAt(i).text;
-            const varMatch = line.match(/^\s*(int|float|str|bool|list|dict|any|pyobject|pyobj)\s+(\w+)\s*=/);
+            const varMatch = line.match(/^\s*(int|float|str|string|bool|list|dict|set|any|pyobject|pyobj)\s+(\w+)\s*=/);
             if (varMatch) {
                 localVars.push({
                     name: varMatch[2],
@@ -559,7 +581,7 @@ function validateDocument(document: vscode.TextDocument) {
             }
         }
 
-        // Combine local variables with global symbols for type checking
+        // Combine local variables (including params) with global symbols for type checking
         // Put local vars first so they take precedence in lookups
         const allSymbols = [...localVars, ...symbols];
 
@@ -1645,7 +1667,7 @@ export function activate(context: vscode.ExtensionContext) {
                 const {text} = line;
 
                 // Skip function definitions (lines that start with a return type)
-                if (text.match(/^\s*(void|int|float|str|string|bool|list|dict|set|any|pyobject|pyobj|func)\s+\w+\s*\(/)) {
+                if (text.match(/^\s*(void|int|float|str|string|bool|list|dict|set|any|pyobject|pyobj)\s+\w+\s*\(/)) {
                     continue;
                 }
 
