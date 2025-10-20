@@ -414,7 +414,7 @@ function validateDocument(document: vscode.TextDocument) {
         const {text} = line;
 
         // Match variable declarations with initialization: type name = value
-        const varDeclMatch = text.match(/^\s*(int|float|str|string|bool|list|dict|set|any|pyobject|pyobj)\s+(\w+)\s*=\s*(.+)$/);
+        const varDeclMatch = text.match(/^\s*(int|float|str|string|bool|list|dict|set|bytes|any|pyobject|pyobj)\s+(\w+)\s*=\s*(.+)$/);
         if (varDeclMatch) {
             const declaredType = varDeclMatch[1];
             const varName = varDeclMatch[2];
