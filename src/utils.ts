@@ -86,10 +86,64 @@ export function isInsideString(document: vscode.TextDocument, position: vscode.P
     const line = document.lineAt(position.line).text;
     const charsBefore = line.substring(0, position.character);
     
-    const doubleQuotes = (charsBefore.match(/"/g) || []).length;
-    const singleQuotes = (charsBefore.match(/'/g) || []).length;
+    // Handle f-strings: f"text" or f'text'
+    // Count quotes, but skip escaped quotes
+    let inDoubleQuote = false;
+    let inSingleQuote = false;
+    let inFString = false;
+    let inFStringBrace = false;
     
-    return (doubleQuotes % 2 !== 0) || (singleQuotes % 2 !== 0);
+    for (let i = 0; i < charsBefore.length; i++) {
+        const char = charsBefore[i];
+        const prevChar = i > 0 ? charsBefore[i - 1] : '';
+        
+        // Skip escaped characters
+        if (prevChar === '\\') {
+            continue;
+        }
+        
+        // Check for f-string start
+        if (char === 'f' && i + 1 < charsBefore.length) {
+            const nextChar = charsBefore[i + 1];
+            if (nextChar === '"' || nextChar === "'") {
+                inFString = true;
+                i++; // Skip the quote
+                if (nextChar === '"') {
+                    inDoubleQuote = true;
+                } else {
+                    inSingleQuote = true;
+                }
+                continue;
+            }
+        }
+        
+        // Handle braces in f-strings
+        if (inFString && (inDoubleQuote || inSingleQuote)) {
+            if (char === '{') {
+                inFStringBrace = true;
+            } else if (char === '}') {
+                inFStringBrace = false;
+            }
+        }
+        
+        // Toggle quote state (but not inside f-string braces)
+        if (!inFStringBrace) {
+            if (char === '"' && !inSingleQuote) {
+                inDoubleQuote = !inDoubleQuote;
+                if (!inDoubleQuote) {
+                    inFString = false;
+                }
+            } else if (char === "'" && !inDoubleQuote) {
+                inSingleQuote = !inSingleQuote;
+                if (!inSingleQuote) {
+                    inFString = false;
+                }
+            }
+        }
+    }
+    
+    // Inside string if we're in quotes and not inside f-string braces
+    return (inDoubleQuote || inSingleQuote) && !inFStringBrace;
 }
 
 export function isInsideComment(document: vscode.TextDocument, position: vscode.Position): boolean {
@@ -134,16 +188,104 @@ export function calculateComplexity(document: vscode.TextDocument, startLine: nu
     for (let i = startLine; i <= endLine; i++) {
         const line = document.lineAt(i).text;
         
+        // Skip comments
+        if (isInsideComment(document, new vscode.Position(i, 0))) {
+            continue;
+        }
+        
+        // Remove string content to avoid counting control keywords inside strings
+        const cleanedLine = removeStringsFromLine(line);
+        
         // Control flow statements add complexity
-        if (line.match(/\b(if|elif|while|for|switch|case)\b/)) {
+        if (cleanedLine.match(/\b(if|elif|while|for|switch|case)\b/)) {
             complexity++;
         }
         
-        // Logical operators add complexity
-        complexity += (line.match(/&&|\|\|/g) || []).length;
+        // Logical operators add complexity (but not inside strings)
+        complexity += (cleanedLine.match(/&&|\|\|/g) || []).length;
     }
     
     return complexity;
+}
+
+function removeStringsFromLine(line: string): string {
+    // Remove all string content including f-strings
+    // This helps avoid counting keywords/operators inside strings
+    let result = '';
+    let inString = false;
+    let stringChar = '';
+    let inFString = false;
+    let braceDepth = 0;
+    let escaped = false;
+    
+    for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        const prevChar = i > 0 ? line[i - 1] : '';
+        const nextChar = i + 1 < line.length ? line[i + 1] : '';
+        
+        if (escaped) {
+            escaped = false;
+            continue;
+        }
+        
+        if (char === '\\') {
+            escaped = true;
+            continue;
+        }
+        
+        // Check for f-string start
+        if (!inString && char === 'f' && (nextChar === '"' || nextChar === "'")) {
+            inString = true;
+            inFString = true;
+            stringChar = nextChar;
+            i++; // Skip the quote
+            continue;
+        }
+        
+        // Regular string start/end
+        if (!inString && (char === '"' || char === "'")) {
+            inString = true;
+            stringChar = char;
+            inFString = false;
+            continue;
+        }
+        
+        if (inString && char === stringChar && braceDepth === 0) {
+            inString = false;
+            inFString = false;
+            continue;
+        }
+        
+        // Track braces in f-strings (code inside braces should be counted)
+        if (inFString) {
+            if (char === '{') {
+                braceDepth++;
+                if (braceDepth === 1) {
+                    continue; // Skip the opening brace itself
+                }
+            } else if (char === '}') {
+                braceDepth--;
+                if (braceDepth === 0) {
+                    continue; // Skip the closing brace itself
+                }
+            }
+            
+            // If we're inside braces, include the content
+            if (braceDepth > 0) {
+                result += char;
+                continue;
+            }
+        }
+        
+        // Skip content inside regular strings
+        if (inString) {
+            continue;
+        }
+        
+        result += char;
+    }
+    
+    return result;
 }
 
 export function calculateNestingDepth(document: vscode.TextDocument, startLine: number, endLine: number): number {
@@ -153,9 +295,12 @@ export function calculateNestingDepth(document: vscode.TextDocument, startLine: 
     for (let i = startLine; i <= endLine; i++) {
         const line = document.lineAt(i).text;
         
-        currentDepth += (line.match(/{/g) || []).length;
+        // Remove strings to avoid counting braces inside strings/f-strings
+        const cleanedLine = removeStringsFromLine(line);
+        
+        currentDepth += (cleanedLine.match(/{/g) || []).length;
         maxDepth = Math.max(maxDepth, currentDepth);
-        currentDepth -= (line.match(/}/g) || []).length;
+        currentDepth -= (cleanedLine.match(/}/g) || []).length;
     }
     
     return maxDepth;
@@ -170,7 +315,10 @@ export function findFunctionBody(document: vscode.TextDocument, functionLine: nu
     for (let i = functionLine; i < document.lineCount; i++) {
         const line = document.lineAt(i).text;
         
-        for (const char of line) {
+        // Remove string content to avoid counting braces inside strings/f-strings
+        const cleanedLine = removeStringsFromLine(line);
+        
+        for (const char of cleanedLine) {
             if (char === '{') {
                 braceCount++;
                 foundStart = true;

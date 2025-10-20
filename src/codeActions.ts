@@ -43,16 +43,6 @@ export class EnhancedCodeActionProvider implements vscode.CodeActionProvider {
     ): vscode.CodeAction[] {
         const actions: vscode.CodeAction[] = [];
 
-        // Quick fix for deprecated print
-        if (diagnostic.code === 'deprecated-print') {
-            const fix = new vscode.CodeAction('Change to println', vscode.CodeActionKind.QuickFix);
-            fix.edit = new vscode.WorkspaceEdit();
-            fix.edit.replace(document.uri, diagnostic.range, 'println');
-            fix.diagnostics = [diagnostic];
-            fix.isPreferred = true;
-            actions.push(fix);
-        }
-
         // Quick fix for semicolons
         if (diagnostic.code === 'no-semicolons') {
             const fix = new vscode.CodeAction('Remove semicolon', vscode.CodeActionKind.QuickFix);

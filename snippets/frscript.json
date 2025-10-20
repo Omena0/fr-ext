@@ -2,7 +2,7 @@
   "Function Declaration": {
     "prefix": "func",
     "body": [
-      "${1|void,int,float,str,bool,list,any|} ${2:functionName}(${3:args}) {",
+      "${1|void,int,float,str,bool,list,dict,set,bytes,any|} ${2:functionName}(${3:args}) {",
       "\t${4:// TODO: implementation}",
       "\t$0",
       "}"
@@ -12,7 +12,7 @@
   "Function with Return": {
     "prefix": "funcr",
     "body": [
-      "${1|int,float,str,bool,list,any|} ${2:functionName}(${3:args}) {",
+      "${1|int,float,str,bool,list,dict,set,bytes,any|} ${2:functionName}(${3:args}) {",
       "\t${4:// TODO: implementation}",
       "\treturn ${5:value}",
       "}"
@@ -113,7 +113,7 @@
     "prefix": "struct",
     "body": [
       "struct ${1:Name} {",
-      "\t${2|int,float,str,bool,list|} ${3:field}",
+      "\t${2|int,float,str,bool,list,dict,set,bytes|} ${3:field}",
       "\t$0",
       "}"
     ],
@@ -122,9 +122,16 @@
   "Variable Declaration": {
     "prefix": "var",
     "body": [
-      "${1|int,float,str,bool,list,dict,any|} ${2:name} = ${3:value}"
+      "${1|int,float,str,bool,list,dict,set,bytes,any|} ${2:name} = ${3:value}"
     ],
     "description": "Declare a variable"
+  },
+  "Global Variable Declaration": {
+    "prefix": "global",
+    "body": [
+      "global ${1|int,float,str,bool,list,dict,set,bytes,any|} ${2:name} = ${3:value}"
+    ],
+    "description": "Declare a global variable"
   },
   "Constant Declaration": {
     "prefix": "const",
@@ -217,37 +224,200 @@
     ],
     "description": "Read from file"
   },
+  "Print": {
+    "prefix": "print",
+    "body": [
+      "print(${1:text})"
+    ],
+    "description": "Print text without newline"
+  },
+  "Print Line": {
+    "prefix": "println",
+    "body": [
+      "println(${1:text})"
+    ],
+    "description": "Print text with newline"
+  },
+  "Input": {
+    "prefix": "input",
+    "body": [
+      "str ${1:userInput} = input(\"${2:Enter value: }\")"
+    ],
+    "description": "Read user input from stdin"
+  },
+  "Fork Process": {
+    "prefix": "fork",
+    "body": [
+      "int ${1:pid} = fork()",
+      "if (${1:pid} == 0) {",
+      "\t// Child process",
+      "\t$0",
+      "} else {",
+      "\t// Parent process",
+      "}"
+    ],
+    "description": "Fork a child process"
+  },
+  "Wait for Process": {
+    "prefix": "wait",
+    "body": [
+      "int ${1:status} = wait(${2:pid})"
+    ],
+    "description": "Wait for a child process to finish"
+  },
+  "Sleep": {
+    "prefix": "sleep",
+    "body": [
+      "sleep(${1:seconds})"
+    ],
+    "description": "Sleep for specified seconds"
+  },
+  "Exit": {
+    "prefix": "exit",
+    "body": [
+      "exit(${1:0})"
+    ],
+    "description": "Exit program with exit code"
+  },
+  "Get PID": {
+    "prefix": "getpid",
+    "body": [
+      "int ${1:pid} = getpid()"
+    ],
+    "description": "Get current process ID"
+  },
   "Socket Create": {
     "prefix": "socket",
     "body": [
-      "int ${1:sock} = socket(\"${2:inet}\", \"${3:stream}\")"
+      "int ${1:sock} = socket()"
     ],
-    "description": "Create a socket"
+    "description": "Create a socket (defaults to inet/stream)"
+  },
+  "Socket Bind": {
+    "prefix": "bind",
+    "body": [
+      "bind(${1:sock}, \"${2:0.0.0.0}\", ${3:8080})"
+    ],
+    "description": "Bind socket to address and port"
+  },
+  "Socket Listen": {
+    "prefix": "listen",
+    "body": [
+      "listen(${1:sock}, ${2:5})"
+    ],
+    "description": "Listen for connections"
+  },
+  "Socket Accept": {
+    "prefix": "accept",
+    "body": [
+      "int ${1:client} = accept(${2:sock})"
+    ],
+    "description": "Accept incoming connection"
+  },
+  "Socket Connect": {
+    "prefix": "connect",
+    "body": [
+      "connect(${1:sock}, \"${2:127.0.0.1}\", ${3:8080})"
+    ],
+    "description": "Connect to remote address"
+  },
+  "Socket Send": {
+    "prefix": "send",
+    "body": [
+      "send(${1:sock}, ${2:data})"
+    ],
+    "description": "Send data through socket"
+  },
+  "Socket Receive": {
+    "prefix": "recv",
+    "body": [
+      "bytes ${1:data} = recv(${2:sock}${3:, 4096})"
+    ],
+    "description": "Receive data from socket"
+  },
+  "Socket Close": {
+    "prefix": "sclose",
+    "body": [
+      "sclose(${1:sock})"
+    ],
+    "description": "Close socket"
   },
   "HTTP Server Template": {
     "prefix": "httpserver",
     "body": [
-      "void main() {",
-      "\tint sock = socket(\"inet\", \"stream\")",
-      "\tsetsockopt(sock, \"SOL_SOCKET\", \"SO_REUSEADDR\", 1)",
-      "\tbind(sock, \"${1:127.0.0.1}\", ${2:8080})",
-      "\tlisten(sock, ${3:5})",
+      "int main() {",
+      "\tint sock = socket()",
+      "\tsock.setsockopt(\"SOL_SOCKET\", \"SO_REUSEADDR\", 1)",
+      "\tsock.bind(\"${1:0.0.0.0}\", ${2:8080})",
+      "\tsock.listen(${3:5})",
+      "\t",
+      "\tprintln(\"Server listening on port ${2:8080}\")",
       "\t",
       "\twhile (true) {",
-      "\t\tint cs = accept(sock)",
-      "\t\tstr request = recv(cs, 4096)",
+      "\t\tint cs = sock.accept()",
+      "\t\tif (cs == -1) {",
+      "\t\t\tcontinue",
+      "\t\t}",
       "\t\t",
-      "\t\t${4:// Handle request}",
-      "\t\t",
-      "\t\tstr response = \"HTTP/1.1 200 OK\\\\r\\\\n\\\\r\\\\n${5:Hello}\"",
-      "\t\tsend(cs, response)",
-      "\t\tsclose(cs)",
+      "\t\tif (fork() == 0) {",
+      "\t\t\t// Child process handles client",
+      "\t\t\tstr request = cs.recv(4096)",
+      "\t\t\t",
+      "\t\t\t${4:// Handle request}",
+      "\t\t\t",
+      "\t\t\tstr response = \"HTTP/1.1 200 OK\\\\r\\\\n\\\\r\\\\n${5:Hello}\"",
+      "\t\t\tcs.send(response)",
+      "\t\t\tcs.sclose()",
+      "\t\t\texit(0)",
+      "\t\t}",
       "\t}",
       "\t",
-      "\tsclose(sock)",
+      "\treturn 0",
       "}"
     ],
-    "description": "HTTP server template"
+    "description": "HTTP server template with fork"
+  },
+  "Chat Server Template": {
+    "prefix": "chatserver",
+    "body": [
+      "void csHandler(int cs) {",
+      "\twhile (true) {",
+      "\t\tstr msg = cs.recv()",
+      "\t\tif (msg == \"\") {",
+      "\t\t\t// Client disconnected",
+      "\t\t\tcs.sclose()",
+      "\t\t\treturn",
+      "\t\t}",
+      "\t\tprintln(\"Received: \" + msg)",
+      "\t\tcs.send(f\"Echo: {msg}\")",
+      "\t}",
+      "}",
+      "",
+      "int main() {",
+      "\tint sock = socket()",
+      "\tsock.bind(\"${1:0.0.0.0}\", ${2:8080})",
+      "\tsock.listen(${3:5})",
+      "\t",
+      "\tprintln(\"Server listening on port ${2:8080}\")",
+      "\t",
+      "\twhile (true) {",
+      "\t\tint cs = sock.accept()",
+      "\t\tif (cs == -1) {",
+      "\t\t\tcontinue",
+      "\t\t}",
+      "\t\t",
+      "\t\tprintln(\"Client connected\")",
+      "\t\t",
+      "\t\tif (fork() == 0) {",
+      "\t\t\tcsHandler(cs)",
+      "\t\t\texit(0)",
+      "\t\t}",
+      "\t}",
+      "\t",
+      "\treturn 0",
+      "}"
+    ],
+    "description": "Chat server template with fork and handler"
   },
   "Comment Header": {
     "prefix": "header",
@@ -258,5 +428,124 @@
       "$0"
     ],
     "description": "Create a section header comment"
+  },
+  "Try-Except Statement": {
+    "prefix": "try",
+    "body": [
+      "try {",
+      "\t${1:// code that might raise an exception}",
+      "\t$0",
+      "} except (${2:Exception}) {",
+      "\t${3:// exception handler}",
+      "}"
+    ],
+    "description": "Try-except statement for error handling"
+  },
+  "Raise Exception": {
+    "prefix": "raise",
+    "body": [
+      "raise(\"${1:[${2:ExceptionType}] ${3:Error message}}\")"
+    ],
+    "description": "Raise an exception with optional type"
+  },
+  "Goto Statement": {
+    "prefix": "goto",
+    "body": [
+      "goto ${1:label_name}"
+    ],
+    "description": "Jump to a label"
+  },
+  "Goto with Return": {
+    "prefix": "gotor",
+    "body": [
+      "${1:int} ${2:result} = goto ${3:label_name}"
+    ],
+    "description": "Goto that captures return value from label"
+  },
+  "Label Directive": {
+    "prefix": "label",
+    "body": [
+      "#label ${1:label_name}",
+      "$0"
+    ],
+    "description": "Define a label for goto jumps"
+  },
+  "Bytecode Directive": {
+    "prefix": "bytecode",
+    "body": [
+      "#bytecode",
+      "${1:// inline bytecode instructions}",
+      "$0"
+    ],
+    "description": "Inline raw bytecode block"
+  },
+  "Set Declaration": {
+    "prefix": "set",
+    "body": [
+      "set ${1:name} = {${2:items}}"
+    ],
+    "description": "Declare a set"
+  },
+  "Set Add": {
+    "prefix": "setadd",
+    "body": [
+      "${1:mySet}.add(${2:value})"
+    ],
+    "description": "Add element to set"
+  },
+  "Set Remove": {
+    "prefix": "setrem",
+    "body": [
+      "${1:mySet}.remove(${2:value})"
+    ],
+    "description": "Remove element from set"
+  },
+  "Set Contains": {
+    "prefix": "setin",
+    "body": [
+      "if (${1:value} in ${2:mySet}) {",
+      "\t$0",
+      "}"
+    ],
+    "description": "Check if value is in set"
+  },
+  "Bytes Declaration": {
+    "prefix": "bytes",
+    "body": [
+      "bytes ${1:name} = b\"${2:data}\""
+    ],
+    "description": "Declare a bytes variable"
+  },
+  "String Encode": {
+    "prefix": "encode",
+    "body": [
+      "bytes ${1:encoded} = ${2:myString}.encode(${3:\"utf-8\"})"
+    ],
+    "description": "Encode string to bytes"
+  },
+  "Bytes Decode": {
+    "prefix": "decode",
+    "body": [
+      "str ${1:decoded} = ${2:myBytes}.decode(${3:\"utf-8\"})"
+    ],
+    "description": "Decode bytes to string"
+  },
+  "Membership Test": {
+    "prefix": "in",
+    "body": [
+      "if (${1:value} in ${2:collection}) {",
+      "\t$0",
+      "}"
+    ],
+    "description": "Check if value is in collection"
+  },
+  "Not In Test": {
+    "prefix": "notin",
+    "body": [
+      "if (${1:value} not in ${2:collection}) {",
+      "\t$0",
+      "}"
+    ],
+    "description": "Check if value is not in collection"
   }
 }

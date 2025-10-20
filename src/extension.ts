@@ -62,11 +62,9 @@ const builtinFunctions: FunctionInfo[] = [
     {
         name: 'print',
         signature: 'print(value: any)',
-        description: 'Print a value without a newline (deprecated, use println)',
-        insertText: 'println($1)$0',
-        detail: 'void print(value: any)',
-        deprecated: true,
-        message: 'Use println instead'
+        description: 'Print a value without a newline',
+        insertText: 'print($1)$0',
+        detail: 'void print(value: any)'
     },
     { name: 'input', signature: 'input(prompt: str) -> str', description: 'Read a line of input from the user', insertText: 'input($1)$0' },
     { name: 'len', signature: 'len(collection: list|str) -> int', description: 'Return the length of a list or string', insertText: 'len($1)$0' },
@@ -80,12 +78,15 @@ const builtinFunctions: FunctionInfo[] = [
     { name: 'fread', signature: 'fread(fd: int, size: int = -1) -> str', description: 'Read from file descriptor', insertText: 'fread($1)$0' },
     { name: 'fwrite', signature: 'fwrite(fd: int, data: str) -> int', description: 'Write to file descriptor', insertText: 'fwrite($1, $2)$0' },
     { name: 'fclose', signature: 'fclose(fd: int)', description: 'Close file descriptor', insertText: 'fclose($1)$0' },
+    { name: 'fork', signature: 'fork() -> int', description: 'Fork the current process (returns 0 in child, child PID in parent, -1 on error)', insertText: 'fork()$0' },
+    { name: 'wait', signature: 'wait(pid: int) -> int', description: 'Wait for child process to finish (returns exit status, -1 on error)', insertText: 'wait($1)$0' },
+    { name: 'sleep', signature: 'sleep(seconds: float)', description: 'Sleep for specified number of seconds', insertText: 'sleep($1)$0' },
     { name: 'socket', signature: 'socket(family: str = "inet", type: str = "stream") -> int', description: 'Create a socket', insertText: 'socket($1, $2)$0' },
     { name: 'bind', signature: 'bind(sock_id: int, host: str, port: int)', description: 'Bind socket to address', insertText: 'bind($1, $2, $3)$0' },
     { name: 'listen', signature: 'listen(sock_id: int, backlog: int = 5)', description: 'Listen for connections', insertText: 'listen($1)$0' },
     { name: 'accept', signature: 'accept(sock_id: int) -> int', description: 'Accept a connection', insertText: 'accept($1)$0' },
-    { name: 'send', signature: 'send(sock_id: int, data: str) -> int', description: 'Send data through socket', insertText: 'send($1, $2)$0' },
-    { name: 'recv', signature: 'recv(sock_id: int, size: int = 4096) -> str', description: 'Receive data from socket', insertText: 'recv($1)$0' },
+    { name: 'send', signature: 'send(sock_id: int, data: bytes) -> int', description: 'Send data through socket', insertText: 'send($1, $2)$0' },
+    { name: 'recv', signature: 'recv(sock_id: int, size: int = 4096) -> bytes', description: 'Receive data from socket', insertText: 'recv($1)$0' },
     { name: 'sclose', signature: 'sclose(sock_id: int)', description: 'Close socket', insertText: 'sclose($1)$0' },
     { name: 'py_import', signature: 'py_import(module: str)', description: 'Import a Python module', insertText: 'py_import $1$0' },
     { name: 'py_call', signature: 'py_call(module: str, function: str, ...args) -> any', description: 'Call a Python function', insertText: 'py_call("$1", "$2"$3)$0' },
@@ -93,8 +94,8 @@ const builtinFunctions: FunctionInfo[] = [
     { name: 'assert', signature: 'assert(condition: bool, message: str = "")', description: 'Assert that a condition is true', insertText: 'assert($1)$0' },
 ];
 
-const keywords = ['if', 'elif', 'else', 'while', 'for', 'in', 'switch', 'case', 'default', 'break', 'continue', 'return', 'assert', 'const', 'struct', 'py_import', 'from', 'as'];
-const types = ['void', 'int', 'float', 'str', 'string', 'bool', 'list', 'dict', 'set', 'any', 'pyobject', 'pyobj'];
+const keywords = ['if', 'elif', 'else', 'while', 'for', 'in', 'switch', 'case', 'default', 'break', 'continue', 'return', 'assert', 'const', 'struct', 'py_import', 'from', 'as', 'try', 'except', 'raise', 'goto', 'global'];
+const types = ['void', 'int', 'float', 'str', 'string', 'bool', 'list', 'dict', 'set', 'bytes', 'any', 'pyobject', 'pyobj'];
 
 // Extract docstrings from document
 function parseDocstrings(document: vscode.TextDocument): Map<number, DocstringInfo> {
@@ -143,7 +144,7 @@ function parseSymbols(document: vscode.TextDocument): SymbolInfo[] {
         const { text } = line;
 
         // Match function declarations
-        const funcMatch = text.match(/^\s*(void|int|float|str|string|bool|list|dict|set|any|pyobject|pyobj)\s+(\w+)\s*\(([^)]*)\)/);
+        const funcMatch = text.match(/^\s*(void|int|float|str|string|bool|list|dict|set|bytes|any|pyobject|pyobj)\s+(\w+)\s*\(([^)]*)\)/);
         if (funcMatch) {
             const doc = docstrings.get(i);
             const returnType = funcMatch[1];
@@ -157,7 +158,7 @@ function parseSymbols(document: vscode.TextDocument): SymbolInfo[] {
                 for (const param of paramList) {
                     const trimmedParam = param.trim();
                     // Try to match typed parameter: type name
-                    const typedMatch = trimmedParam.match(/^(void|int|float|str|string|bool|list|dict|set|any|pyobject|pyobj)\s+(\w+)$/);
+                    const typedMatch = trimmedParam.match(/^(void|int|float|str|string|bool|list|dict|set|bytes|any|pyobject|pyobj)\s+(\w+)$/);
                     if (typedMatch) {
                         parameters.push({
                             type: typedMatch[1],
@@ -203,7 +204,7 @@ function parseSymbols(document: vscode.TextDocument): SymbolInfo[] {
                 }
 
                 // Match field declaration: type name
-                const fieldMatch = fieldLine.match(/^\s*(void|int|float|str|string|bool|list|dict|set|any|pyobject|pyobj)\s+(\w+)\s*/);
+                const fieldMatch = fieldLine.match(/^\s*(void|int|float|str|string|bool|list|dict|set|bytes|any|pyobject|pyobj)\s+(\w+)\s*/);
                 if (fieldMatch) {
                     fields.push({
                         type: fieldMatch[1],
@@ -224,7 +225,7 @@ function parseSymbols(document: vscode.TextDocument): SymbolInfo[] {
         }
 
         // Match variable declarations
-        const varMatch = text.match(/^\s*(int|float|str|string|bool|list|dict|set|any|pyobject|pyobj)\s+(\w+)\s*=/);
+        const varMatch = text.match(/^\s*(int|float|str|string|bool|list|dict|set|bytes|any|pyobject|pyobj)\s+(\w+)\s*=/);
         if (varMatch) {
             symbols.push({
                 name: varMatch[2],
@@ -252,20 +253,6 @@ function validateDocument(document: vscode.TextDocument) {
     for (let i = 0; i < document.lineCount; i++) {
         const line = document.lineAt(i);
         const {text} = line;
-
-        // Check for deprecated 'print' usage
-        const printMatch = text.match(/\bprint\s*\(/);
-        if (printMatch && !text.match(/println/)) {
-            const start = text.indexOf('print');
-            const range = new vscode.Range(i, start, i, start + 5);
-            const diagnostic = new vscode.Diagnostic(
-                range,
-                'Use println instead of print',
-                vscode.DiagnosticSeverity.Warning
-            );
-            diagnostic.code = 'deprecated-print';
-            diagnostics.push(diagnostic);
-        }
 
         // Check for unclosed parentheses
         const openParens = (text.match(/\(/g) || []).length;
@@ -697,6 +684,16 @@ function inferType(value: string): string | null {
     if (value.startsWith("'") && value.endsWith("'")) {
         return 'str';
     }
+    
+    // F-string literals
+    if (value.startsWith('f"') || value.startsWith("f'")) {
+        return 'str';
+    }
+    
+    // Bytes literals
+    if (value.startsWith('b"') || value.startsWith("b'")) {
+        return 'bytes';
+    }
 
     // Integer literals
     if (/^-?\d+$/.test(value)) {
@@ -716,6 +713,23 @@ function inferType(value: string): string | null {
     // List literals
     if (value.startsWith('[') && value.endsWith(']')) {
         return 'list';
+    }
+    
+    // Dict and Set literals (both use curly braces)
+    if (value.startsWith('{') && value.endsWith('}')) {
+        // Empty {} is ambiguous, but typically treated as dict
+        if (value === '{}') {
+            return 'dict';
+        }
+        
+        // Check if it contains key:value pairs (dict) or just values (set)
+        // Simple heuristic: if there's a colon not in a string, it's likely a dict
+        const withoutStrings = value.replace(/"[^"]*"|'[^']*'/g, '');
+        if (withoutStrings.includes(':')) {
+            return 'dict';
+        } else {
+            return 'set';
+        }
     }
 
     // Can't infer type for variables/expressions
@@ -794,6 +808,11 @@ function inferReturnType(value: string, symbols: SymbolInfo[]): string | null {
             'basename': 'str',
             'dirname': 'str',
             'pathjoin': 'str',
+            
+            // Process management
+            'fork': 'int',
+            'wait': 'int',
+            'sleep': 'void',
             
             // Socket functions
             'socket': 'int',
@@ -1151,9 +1170,6 @@ export function activate(context: vscode.ExtensionContext) {
                 // Boost println over print
                 if (func.name === 'println') {
                     item.sortText = '0_println';
-                } else if (func.name === 'print') {
-                    item.sortText = 'z_print';
-                    item.label = { label: func.name, description: '(deprecated)' };
                 }
 
                 completionItems.push(item);
@@ -1667,7 +1683,7 @@ export function activate(context: vscode.ExtensionContext) {
                 const {text} = line;
 
                 // Skip function definitions (lines that start with a return type)
-                if (text.match(/^\s*(void|int|float|str|string|bool|list|dict|set|any|pyobject|pyobj)\s+\w+\s*\(/)) {
+                if (text.match(/^\s*(void|int|float|str|string|bool|list|dict|set|bytes|any|pyobject|pyobj)\s+\w+\s*\(/)) {
                     continue;
                 }
 
