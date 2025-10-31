@@ -75,7 +75,7 @@ const builtinFunctions: FunctionInfo[] = [
     { name: 'split', signature: 'split(text: str, delimiter: str) -> list', description: 'Split a string by delimiter', insertText: 'split($1, $2)$0' },
     { name: 'join', signature: 'join(items: list, separator: str) -> str', description: 'Join list items with separator', insertText: 'join($1, $2)$0' },
     { name: 'fopen', signature: 'fopen(path: str, mode: str = "r") -> int', description: 'Open a file and return file descriptor', insertText: 'fopen($1)$0' },
-    { name: 'fread', signature: 'fread(fd: int, size: int = -1) -> str', description: 'Read from file descriptor', insertText: 'fread($1)$0' },
+    { name: 'fread', signature: 'fread(fd: int, size: int = -1) -> bytes', description: 'Read from file descriptor', insertText: 'fread($1)$0' },
     { name: 'fwrite', signature: 'fwrite(fd: int, data: str) -> int', description: 'Write to file descriptor', insertText: 'fwrite($1, $2)$0' },
     { name: 'fclose', signature: 'fclose(fd: int)', description: 'Close file descriptor', insertText: 'fclose($1)$0' },
     { name: 'fork', signature: 'fork() -> int', description: 'Fork the current process (returns 0 in child, child PID in parent, -1 on error)', insertText: 'fork()$0' },
@@ -842,7 +842,7 @@ function inferReturnType(value: string, symbols: SymbolInfo[]): string | null {
     }
 
     // Check for arithmetic operations
-    if (value.includes('+') || value.includes('-') || value.includes('*') || value.includes('/')) {
+    if (value.includes('+') || value.includes('-') || value.includes('*') || value.includes('/') || value.includes('**')) {
         // Division always returns float
         if (value.includes('/')) {
             return 'float';
@@ -867,9 +867,23 @@ function inferReturnType(value: string, symbols: SymbolInfo[]): string | null {
         return 'int';
     }
 
-    // Check for comparison operations
-    if (value.includes('==') || value.includes('!=') || value.includes('<') ||
-        value.includes('>') || value.includes('<=') || value.includes('>=') ||
+    // Check for bitwise operations (these return int)
+    if (value.includes('&') || value.includes('|') || value.includes('^') || 
+        value.includes('<<') || value.includes('>>')) {
+        return 'int';
+    }
+
+    // Check for bitwise operations (should return int, not bool)
+    if (value.match(/\d+\s*[&|^]\s*\d+/) || 
+        value.match(/\d+\s*<<\s*\d+/) || 
+        value.match(/\d+\s*>>\s*\d+/)) {
+        return 'int';
+    }
+
+    // Check for comparison operations (check for specific operators to avoid matching << or >>)
+    if (value.includes('==') || value.includes('!=') || 
+        value.includes('<=') || value.includes('>=') ||
+        value.match(/[^<>]<[^<]/) || value.match(/[^<>]>[^>]/) ||
         value.includes('and') || value.includes('or') || value.includes('not')) {
         return 'bool';
     }
