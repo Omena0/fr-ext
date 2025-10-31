@@ -796,7 +796,7 @@ function inferReturnType(value: string, symbols: SymbolInfo[]): string | null {
             
             // File I/O functions
             'fopen': 'int',
-            'fread': 'str',
+            'fread': 'bytes',
             'fwrite': 'int',
             'exists': 'bool',
             'isfile': 'bool',

@@ -32,7 +32,7 @@ export class MetricsProvider {
             const {text} = line;
 
             // Match function declarations
-            const funcMatch = text.match(/^\s*(void|int|float|str|bool|list|dict|any|pyobject)\s+(\w+)\s*\(/);
+            const funcMatch = text.match(/^\s*(void|int|float|str|bool|list|dict|any|pyobject|bytes)\s+(\w+)\s*\(/);
             if (funcMatch) {
                 const functionName = funcMatch[2];
                 const body = findFunctionBody(document, i);
