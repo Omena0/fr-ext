@@ -2,7 +2,7 @@
   "name": "frscript",
   "displayName": "Frscript Extension",
   "description": "VSCode Extension for Frscript with advanced features including process management, sockets, and I/O.",
-  "version": "2.8.0",
+  "version": "2.8.1",
   "publisher": "omena0",
   "engines": {
     "vscode": "^1.104.0"
