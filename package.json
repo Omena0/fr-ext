@@ -120,12 +120,6 @@
         "path": "./syntaxes/frscript-bytecode.tmLanguage.json"
       }
     ],
-    "snippets": [
-      {
-        "language": "frscript",
-        "path": "./snippets/frscript.json"
-      }
-    ],
     "breakpoints": [
       {
         "language": "frscript"
