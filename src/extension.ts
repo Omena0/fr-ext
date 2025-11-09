@@ -50,6 +50,23 @@ interface SymbolInfo {
     endLine?: number;  // For scope tracking
 }
 
+interface CImportInfo {
+    path: string;
+    line: number;
+}
+
+interface CLinkInfo {
+    libs: string;
+    line: number;
+}
+
+interface CSymbolInfo {
+    name: string;
+    type: 'function' | 'struct' | 'macro';
+    signature?: string;
+    documentation?: string;
+}
+
 // Built-in functions
 const builtinFunctions: FunctionInfo[] = [
     {
@@ -92,9 +109,16 @@ const builtinFunctions: FunctionInfo[] = [
     { name: 'py_call', signature: 'py_call(module: str, function: str, ...args) -> any', description: 'Call a Python function', insertText: 'py_call("$1", "$2"$3)$0' },
     { name: 'sqrt', signature: 'sqrt(x: float) -> float', description: 'Square root', insertText: 'sqrt($1)$0' },
     { name: 'assert', signature: 'assert(condition: bool, message: str = "")', description: 'Assert that a condition is true', insertText: 'assert($1)$0' },
+    { name: 'decode', signature: 'decode(data: bytes) -> str', description: 'Decode bytes to string', insertText: 'decode($1)$0' },
+    { name: 'encode', signature: 'encode(text: str) -> bytes', description: 'Encode string to bytes', insertText: 'encode($1)$0' },
+    { name: 'upper', signature: 'upper(text: str) -> str', description: 'Convert string to uppercase', insertText: 'upper($1)$0' },
+    { name: 'lower', signature: 'lower(text: str) -> str', description: 'Convert string to lowercase', insertText: 'lower($1)$0' },
+    { name: 'strip', signature: 'strip(text: str) -> str', description: 'Remove leading and trailing whitespace', insertText: 'strip($1)$0' },
+    { name: 'append', signature: 'append(lst: list, item: any)', description: 'Append an item to the list', insertText: 'append($1, $2)$0' },
+    { name: 'pop', signature: 'pop(lst: list) -> any', description: 'Remove and return the last item from the list', insertText: 'pop($1)$0' },
 ];
 
-const keywords = ['if', 'elif', 'else', 'while', 'for', 'in', 'switch', 'case', 'default', 'break', 'continue', 'return', 'assert', 'const', 'struct', 'py_import', 'from', 'as', 'try', 'except', 'raise', 'goto', 'global'];
+const keywords = ['if', 'elif', 'else', 'while', 'for', 'in', 'switch', 'case', 'default', 'break', 'continue', 'return', 'assert', 'const', 'struct', 'py_import', 'from', 'as', 'try', 'except', 'raise', 'goto', 'global', 'c_import', 'c_link'];
 const types = ['void', 'int', 'float', 'str', 'string', 'bool', 'list', 'dict', 'set', 'bytes', 'any', 'pyobject', 'pyobj'];
 
 // Extract docstrings from document
@@ -134,17 +158,103 @@ function parseDocstrings(document: vscode.TextDocument): Map<number, DocstringIn
     return docstrings;
 }
 
-// Parse symbols (functions and structs) with their docstrings
-function parseSymbols(document: vscode.TextDocument): SymbolInfo[] {
-    const symbols: SymbolInfo[] = [];
-    const docstrings = parseDocstrings(document);
+// Helper to check if a type is valid (built-in or struct name)
+function isValidType(typeName: string, structs: string[]): boolean {
+    return types.includes(typeName) || structs.includes(typeName);
+}
+
+// Parse C imports and links from document
+function parseCImports(document: vscode.TextDocument): { imports: CImportInfo[], links: CLinkInfo[] } {
+    const imports: CImportInfo[] = [];
+    const links: CLinkInfo[] = [];
 
     for (let i = 0; i < document.lineCount; i++) {
         const line = document.lineAt(i);
         const { text } = line;
 
-        // Match function declarations
-        const funcMatch = text.match(/^\s*(void|int|float|str|string|bool|list|dict|set|bytes|any|pyobject|pyobj)\s+(\w+)\s*\(([^)]*)\)/);
+        // Match c_import statements
+        const importMatch = text.match(/^\s*c_import\s+(.+)$/);
+        if (importMatch) {
+            imports.push({
+                path: importMatch[1].trim(),
+                line: i
+            });
+        }
+
+        // Match c_link statements
+        const linkMatch = text.match(/^\s*c_link\s+(.+)$/);
+        if (linkMatch) {
+            links.push({
+                libs: linkMatch[1].trim(),
+                line: i
+            });
+        }
+    }
+
+    return { imports, links };
+}
+
+// Parse C symbols from header files (simplified version)
+// In a real implementation, this could use libclang or parse headers more thoroughly
+function parseCSymbols(headerPath: string): CSymbolInfo[] {
+    // For now, return common raylib functions as an example
+    // In production, this would actually parse the header file
+    const symbols: CSymbolInfo[] = [];
+
+    if (headerPath.includes('raylib.h')) {
+        // Add common raylib functions
+        symbols.push(
+            { name: 'InitWindow', type: 'function', signature: 'void InitWindow(int width, int height, const char *title)' },
+            { name: 'CloseWindow', type: 'function', signature: 'void CloseWindow(void)' },
+            { name: 'WindowShouldClose', type: 'function', signature: 'bool WindowShouldClose(void)' },
+            { name: 'BeginDrawing', type: 'function', signature: 'void BeginDrawing(void)' },
+            { name: 'EndDrawing', type: 'function', signature: 'void EndDrawing(void)' },
+            { name: 'ClearBackground', type: 'function', signature: 'void ClearBackground(Color color)' },
+            { name: 'DrawText', type: 'function', signature: 'void DrawText(const char *text, int posX, int posY, int fontSize, Color color)' },
+            { name: 'DrawRectangle', type: 'function', signature: 'void DrawRectangle(int posX, int posY, int width, int height, Color color)' },
+            { name: 'DrawCircle', type: 'function', signature: 'void DrawCircle(int centerX, int centerY, float radius, Color color)' },
+            { name: 'IsKeyDown', type: 'function', signature: 'bool IsKeyDown(int key)' },
+            { name: 'IsKeyPressed', type: 'function', signature: 'bool IsKeyPressed(int key)' },
+            { name: 'GetFrameTime', type: 'function', signature: 'float GetFrameTime(void)' },
+            { name: 'SetTargetFPS', type: 'function', signature: 'void SetTargetFPS(int fps)' },
+            { name: 'GetScreenWidth', type: 'function', signature: 'int GetScreenWidth(void)' },
+            { name: 'GetScreenHeight', type: 'function', signature: 'int GetScreenHeight(void)' },
+            { name: 'KEY_W', type: 'macro', signature: '87' },
+            { name: 'KEY_S', type: 'macro', signature: '83' },
+            { name: 'KEY_UP', type: 'macro', signature: '265' },
+            { name: 'KEY_DOWN', type: 'macro', signature: '264' }
+        );
+    }
+
+    return symbols;
+}
+
+// Parse symbols (functions and structs) with their docstrings
+function parseSymbols(document: vscode.TextDocument): SymbolInfo[] {
+    const symbols: SymbolInfo[] = [];
+    const docstrings = parseDocstrings(document);
+
+    // First pass: collect all struct names
+    const structNames: string[] = [];
+    for (let i = 0; i < document.lineCount; i++) {
+        const line = document.lineAt(i);
+        const structMatch = line.text.match(/^\s*struct\s+(\w+)\s*\{/);
+        if (structMatch) {
+            structNames.push(structMatch[1]);
+        }
+    }
+
+    // Build regex pattern that includes struct types
+    const allTypes = [...types, ...structNames];
+    const typePattern = allTypes.join('|');
+
+    for (let i = 0; i < document.lineCount; i++) {
+        const line = document.lineAt(i);
+        const { text } = line;
+
+        // Match function declarations (including struct return types)
+        const funcRegex = new RegExp(`^\\s*(${typePattern})\\s+(\\w+)\\s*\\(([^)]*)\\)`);
+        const funcMatch = text.match(funcRegex);
         if (funcMatch) {
             const doc = docstrings.get(i);
             const returnType = funcMatch[1];
@@ -157,8 +267,9 @@ function parseSymbols(document: vscode.TextDocument): SymbolInfo[] {
                 const paramList = paramsText.split(',');
                 for (const param of paramList) {
                     const trimmedParam = param.trim();
-                    // Try to match typed parameter: type name
-                    const typedMatch = trimmedParam.match(/^(void|int|float|str|string|bool|list|dict|set|bytes|any|pyobject|pyobj)\s+(\w+)$/);
+                    // Try to match typed parameter: type name (including struct types)
+                    const typedRegex = new RegExp(`^(${typePattern})\\s+(\\w+)$`);
+                    const typedMatch = trimmedParam.match(typedRegex);
                     if (typedMatch) {
                         parameters.push({
                             type: typedMatch[1],
@@ -193,7 +304,7 @@ function parseSymbols(document: vscode.TextDocument): SymbolInfo[] {
             const doc = docstrings.get(i);
             const fields: StructField[] = [];
 
-            // Parse struct fields
+            // Parse struct fields (including struct-typed fields)
             let currentLine = i + 1;
             while (currentLine < document.lineCount) {
                 const fieldLine = document.lineAt(currentLine).text;
@@ -203,8 +314,9 @@ function parseSymbols(document: vscode.TextDocument): SymbolInfo[] {
                     break;
                 }
 
-                // Match field declaration: type name
-                const fieldMatch = fieldLine.match(/^\s*(void|int|float|str|string|bool|list|dict|set|bytes|any|pyobject|pyobj)\s+(\w+)\s*/);
+                // Match field declaration: type name (including struct types)
+                const fieldRegex = new RegExp(`^\\s*(${typePattern})\\s+(\\w+)\\s*`);
+                const fieldMatch = fieldLine.match(fieldRegex);
                 if (fieldMatch) {
                     fields.push({
                         type: fieldMatch[1],
@@ -224,8 +336,9 @@ function parseSymbols(document: vscode.TextDocument): SymbolInfo[] {
             });
         }
 
-        // Match variable declarations
-        const varMatch = text.match(/^\s*(int|float|str|string|bool|list|dict|set|bytes|any|pyobject|pyobj)\s+(\w+)\s*=/);
+        // Match variable declarations (including struct types)
+        const varRegex = new RegExp(`^\\s*(${typePattern})\\s+(\\w+)\\s*=`);
+        const varMatch = text.match(varRegex);
         if (varMatch) {
             symbols.push({
                 name: varMatch[2],
@@ -351,12 +464,23 @@ function validateDocument(document: vscode.TextDocument) {
                     if (inferredType && expectedType !== 'any' && inferredType !== expectedType) {
                         const argStart = text.indexOf(arg, callStart);
                         const range = new vscode.Range(i, argStart, i, argStart + arg.length);
-                        const diagnostic = new vscode.Diagnostic(
-                            range,
-                            `Type mismatch in struct '${funcName}': field '${structDef.fields[argIdx].name}' expects '${expectedType}', but got '${inferredType}'`,
-                            vscode.DiagnosticSeverity.Error
-                        );
-                        diagnostics.push(diagnostic);
+
+                        // Allow float to int with warning (auto-casting)
+                        if (expectedType === 'int' && inferredType === 'float') {
+                            const diagnostic = new vscode.Diagnostic(
+                                range,
+                                `Implicit conversion from 'float' to 'int' in struct '${funcName}' field '${structDef.fields[argIdx].name}'`,
+                                vscode.DiagnosticSeverity.Warning
+                            );
+                            diagnostics.push(diagnostic);
+                        } else {
+                            const diagnostic = new vscode.Diagnostic(
+                                range,
+                                `Type mismatch in struct '${funcName}': field '${structDef.fields[argIdx].name}' expects '${expectedType}', but got '${inferredType}'`,
+                                vscode.DiagnosticSeverity.Error
+                            );
+                            diagnostics.push(diagnostic);
+                        }
                     }
                 }
                 continue;
@@ -397,12 +521,23 @@ function validateDocument(document: vscode.TextDocument) {
                 if (inferredType && expectedType !== 'any' && inferredType !== expectedType) {
                     const argStart = text.indexOf(arg, callStart);
                     const range = new vscode.Range(i, argStart, i, argStart + arg.length);
-                    const diagnostic = new vscode.Diagnostic(
-                        range,
-                        `Type mismatch: expected '${expectedType}', but got '${inferredType}'`,
-                        vscode.DiagnosticSeverity.Error
-                    );
-                    diagnostics.push(diagnostic);
+
+                    // Allow float to int with warning (auto-casting)
+                    if (expectedType === 'int' && inferredType === 'float') {
+                        const diagnostic = new vscode.Diagnostic(
+                            range,
+                            `Implicit conversion from 'float' to 'int' in function '${funcName}' parameter '${funcDef.parameters[argIdx].name}'`,
+                            vscode.DiagnosticSeverity.Warning
+                        );
+                        diagnostics.push(diagnostic);
+                    } else {
+                        const diagnostic = new vscode.Diagnostic(
+                            range,
+                            `Type mismatch: expected '${expectedType}', but got '${inferredType}'`,
+                            vscode.DiagnosticSeverity.Error
+                        );
+                        diagnostics.push(diagnostic);
+                    }
                 }
             }
         }
@@ -431,7 +566,7 @@ function validateDocument(document: vscode.TextDocument) {
                 if (func.line >= i) {
                     continue; // Function is after this line
                 }
-                
+
                 // Find the end of this function by counting braces
                 let braceCount = 0;
                 let functionEnded = false;
@@ -453,7 +588,7 @@ function validateDocument(document: vscode.TextDocument) {
                         break;
                     }
                 }
-                
+
                 // If we're still in this function at line i (didn't end and has opened)
                 if (!functionEnded && braceCount > 0) {
                     currentFunction = func;
@@ -488,13 +623,25 @@ function validateDocument(document: vscode.TextDocument) {
                 const valueStart = text.indexOf('=') + 1;
                 const valuePos = text.indexOf(value, valueStart);
                 const range = new vscode.Range(i, valuePos, i, valuePos + value.length);
-                const diagnostic = new vscode.Diagnostic(
-                    range,
-                    `Type mismatch: cannot assign '${inferredType}' to variable of type '${declaredType}'`,
-                    vscode.DiagnosticSeverity.Error
-                );
-                diagnostic.code = 'type-mismatch';
-                diagnostics.push(diagnostic);
+
+                // Allow float to int with warning (auto-casting)
+                if (declaredType === 'int' && inferredType === 'float') {
+                    const diagnostic = new vscode.Diagnostic(
+                        range,
+                        `Implicit conversion from 'float' to 'int' (value will be truncated)`,
+                        vscode.DiagnosticSeverity.Warning
+                    );
+                    diagnostic.code = 'implicit-cast';
+                    diagnostics.push(diagnostic);
+                } else {
+                    const diagnostic = new vscode.Diagnostic(
+                        range,
+                        `Type mismatch: cannot assign '${inferredType}' to variable of type '${declaredType}'`,
+                        vscode.DiagnosticSeverity.Error
+                    );
+                    diagnostic.code = 'type-mismatch';
+                    diagnostics.push(diagnostic);
+                }
             }
         }
     }
@@ -684,12 +831,12 @@ function inferType(value: string): string | null {
     if (value.startsWith("'") && value.endsWith("'")) {
         return 'str';
     }
-    
+
     // F-string literals
     if (value.startsWith('f"') || value.startsWith("f'")) {
         return 'str';
     }
-    
+
     // Bytes literals
     if (value.startsWith('b"') || value.startsWith("b'")) {
         return 'bytes';
@@ -714,14 +861,14 @@ function inferType(value: string): string | null {
     if (value.startsWith('[') && value.endsWith(']')) {
         return 'list';
     }
-    
+
     // Dict and Set literals (both use curly braces)
     if (value.startsWith('{') && value.endsWith('}')) {
         // Empty {} is ambiguous, but typically treated as dict
         if (value === '{}') {
             return 'dict';
         }
-        
+
         // Check if it contains key:value pairs (dict) or just values (set)
         // Simple heuristic: if there's a colon not in a string, it's likely a dict
         const withoutStrings = value.replace(/"[^"]*"|'[^']*'/g, '');
@@ -764,12 +911,12 @@ function inferReturnType(value: string, symbols: SymbolInfo[]): string | null {
             'int': 'int',
             'float': 'float',
             'bool': 'bool',
-            
+
             // Collection functions
             'len': 'int',
             'append': 'list',
             'pop': 'any',
-            
+
             // String functions
             'input': 'str',
             'split': 'list',
@@ -778,7 +925,7 @@ function inferReturnType(value: string, symbols: SymbolInfo[]): string | null {
             'lower': 'str',
             'strip': 'str',
             'replace': 'str',
-            
+
             // Math functions
             'sqrt': 'float',
             'abs': 'any',
@@ -793,7 +940,7 @@ function inferReturnType(value: string, symbols: SymbolInfo[]): string | null {
             'tan': 'float',
             'PI': 'float',
             'E': 'float',
-            
+
             // File I/O functions
             'fopen': 'int',
             'fread': 'bytes',
@@ -808,18 +955,18 @@ function inferReturnType(value: string, symbols: SymbolInfo[]): string | null {
             'basename': 'str',
             'dirname': 'str',
             'pathjoin': 'str',
-            
+
             // Process management
             'fork': 'int',
             'wait': 'int',
             'sleep': 'void',
-            
+
             // Socket functions
             'socket': 'int',
             'accept': 'int',
             'send': 'int',
-            'recv': 'str',
-            
+            'recv': 'bytes',
+
             // Python interop
             'py_call': 'any',
             'py_getattr': 'any',
@@ -868,20 +1015,20 @@ function inferReturnType(value: string, symbols: SymbolInfo[]): string | null {
     }
 
     // Check for bitwise operations (these return int)
-    if (value.includes('&') || value.includes('|') || value.includes('^') || 
+    if (value.includes('&') || value.includes('|') || value.includes('^') ||
         value.includes('<<') || value.includes('>>')) {
         return 'int';
     }
 
     // Check for bitwise operations (should return int, not bool)
-    if (value.match(/\d+\s*[&|^]\s*\d+/) || 
-        value.match(/\d+\s*<<\s*\d+/) || 
+    if (value.match(/\d+\s*[&|^]\s*\d+/) ||
+        value.match(/\d+\s*<<\s*\d+/) ||
         value.match(/\d+\s*>>\s*\d+/)) {
         return 'int';
     }
 
     // Check for comparison operations (check for specific operators to avoid matching << or >>)
-    if (value.includes('==') || value.includes('!=') || 
+    if (value.includes('==') || value.includes('!=') ||
         value.includes('<=') || value.includes('>=') ||
         value.match(/[^<>]<[^<]/) || value.match(/[^<>]>[^>]/) ||
         value.includes('and') || value.includes('or') || value.includes('not')) {
@@ -936,13 +1083,13 @@ function inferReturnType(value: string, symbols: SymbolInfo[]): string | null {
 export function activate(context: vscode.ExtensionContext) {
     // Only log to console when extension development host is active
     const isExtensionDevelopment = context.extensionMode === vscode.ExtensionMode.Development;
-    
+
     // Auto-activate .venv if it exists
     if (vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 0) {
         const workspaceRoot = vscode.workspace.workspaceFolders[0].uri.fsPath;
         const venvPath = require('path').join(workspaceRoot, '.venv');
         const fs = require('fs');
-        
+
         // Check if .venv exists
         if (fs.existsSync(venvPath)) {
             // Get Python extension API
@@ -951,32 +1098,32 @@ export function activate(context: vscode.ExtensionContext) {
                 if (!pythonExtension.isActive) {
                     pythonExtension.activate().then(() => {
                         // Set the Python path to use .venv
-                        const pythonPath = process.platform === 'win32' ? 
+                        const pythonPath = process.platform === 'win32' ?
                             require('path').join(venvPath, 'Scripts', 'python.exe') :
                             require('path').join(venvPath, 'bin', 'python');
-                        
+
                         vscode.workspace.getConfiguration('python').update(
                             'defaultInterpreterPath',
                             pythonPath,
                             vscode.ConfigurationTarget.Workspace
                         );
-                        
+
                         if (isExtensionDevelopment) {
                             console.log(`Auto-activated .venv: ${pythonPath}`);
                         }
                     });
                 } else {
                     // Python extension already active, just set the path
-                    const pythonPath = process.platform === 'win32' ? 
+                    const pythonPath = process.platform === 'win32' ?
                         require('path').join(venvPath, 'Scripts', 'python.exe') :
                         require('path').join(venvPath, 'bin', 'python');
-                    
+
                     vscode.workspace.getConfiguration('python').update(
                         'defaultInterpreterPath',
                         pythonPath,
                         vscode.ConfigurationTarget.Workspace
                     );
-                    
+
                     if (isExtensionDevelopment) {
                         console.log(`Auto-activated .venv: ${pythonPath}`);
                     }
@@ -984,7 +1131,7 @@ export function activate(context: vscode.ExtensionContext) {
             }
         }
     }
-    
+
     // Create output channel for debugger logs
     const debugOutputChannel = vscode.window.createOutputChannel('Frscript Debugger');
     if (isExtensionDevelopment) {
@@ -1091,29 +1238,29 @@ export function activate(context: vscode.ExtensionContext) {
     const completionProvider = vscode.languages.registerCompletionItemProvider('frscript', {
         async provideCompletionItems(document: vscode.TextDocument, position: vscode.Position) {
             const completionItems: vscode.CompletionItem[] = [];
-            
+
             // Check if we're typing after a dot (for Python module members)
             const lineText = document.lineAt(position.line).text;
             const textBeforeCursor = lineText.substring(0, position.character);
             const dotMatch = textBeforeCursor.match(/(\w+)\.(\w*)$/);
-            
+
             if (dotMatch) {
                 const objectName = dotMatch[1];
                 const partialAttribute = dotMatch[2];
-                
+
                 // First check if it's a Python module
                 const pythonImports = pythonProvider.getImports(document);
-                const pythonImport = pythonImports.find(imp => 
+                const pythonImport = pythonImports.find(imp =>
                     imp.alias === objectName || imp.name === objectName
                 );
-                
+
                 if (pythonImport) {
                     // Get module members using Python introspection
                     const members = await pythonProvider.getModuleMembers(pythonImport.name);
-                    
+
                     if (members && members.length > 0) {
                         members.forEach(member => {
-                            const item = new vscode.CompletionItem(member.name, 
+                            const item = new vscode.CompletionItem(member.name,
                                 member.type === 'class' ? vscode.CompletionItemKind.Class :
                                 member.type === 'function' ? vscode.CompletionItemKind.Function :
                                 vscode.CompletionItemKind.Variable
@@ -1124,7 +1271,7 @@ export function activate(context: vscode.ExtensionContext) {
                             }
                             completionItems.push(item);
                         });
-                        
+
                         return completionItems;
                     }
                 } else {
@@ -1133,23 +1280,23 @@ export function activate(context: vscode.ExtensionContext) {
                     const text = document.getText();
                     const varAssignPattern = new RegExp(`pyobj\\s+${objectName}\\s*=\\s*(\\w+)\\.(\\w+)\\s*\\(`, 'g');
                     const varMatch = varAssignPattern.exec(text);
-                    
+
                     if (varMatch) {
                         const moduleName = varMatch[1];
                         const className = varMatch[2];
-                        
+
                         // Find the Python module
-                        const moduleImport = pythonImports.find(imp => 
+                        const moduleImport = pythonImports.find(imp =>
                             imp.alias === moduleName || imp.name === moduleName
                         );
-                        
+
                         if (moduleImport) {
                             // Get members of the class
                             const members = await pythonProvider.getClassMembers(moduleImport.name, className);
-                            
+
                             if (members && members.length > 0) {
                                 members.forEach(member => {
-                                    const item = new vscode.CompletionItem(member.name, 
+                                    const item = new vscode.CompletionItem(member.name,
                                         member.type === 'method' ? vscode.CompletionItemKind.Method :
                                         vscode.CompletionItemKind.Property
                                     );
@@ -1159,7 +1306,7 @@ export function activate(context: vscode.ExtensionContext) {
                                     }
                                     completionItems.push(item);
                                 });
-                                
+
                                 return completionItems;
                             }
                         }
@@ -1192,13 +1339,42 @@ export function activate(context: vscode.ExtensionContext) {
             // Add user-defined symbols
             const symbols = parseSymbols(document);
             symbols.forEach(symbol => {
-                const kind = symbol.type === 'function' ? vscode.CompletionItemKind.Function : vscode.CompletionItemKind.Class;
+                const kind = symbol.type === 'function' ? vscode.CompletionItemKind.Function :
+                            symbol.type === 'struct' ? vscode.CompletionItemKind.Struct :
+                            vscode.CompletionItemKind.Variable;
                 const item = new vscode.CompletionItem(symbol.name, kind);
                 if (symbol.documentation) {
                     item.documentation = new vscode.MarkdownString(symbol.documentation);
                 }
+                // Add signature for functions
+                if (symbol.type === 'function' && symbol.returnType && symbol.parameters) {
+                    const params = symbol.parameters.map(p => `${p.type} ${p.name}`).join(', ');
+                    item.detail = `${symbol.returnType} ${symbol.name}(${params})`;
+                }
                 completionItems.push(item);
             });
+
+            // Add C imported symbols
+            const cImports = parseCImports(document);
+            if (cImports.imports.length > 0) {
+                const cSymbols: CSymbolInfo[] = [];
+                for (const imp of cImports.imports) {
+                    cSymbols.push(...parseCSymbols(imp.path));
+                }
+
+                cSymbols.forEach(cSymbol => {
+                    const kind = cSymbol.type === 'function' ? vscode.CompletionItemKind.Function :
+                                cSymbol.type === 'struct' ? vscode.CompletionItemKind.Struct :
+                                vscode.CompletionItemKind.Constant;
+                    const item = new vscode.CompletionItem(cSymbol.name, kind);
+                    item.detail = cSymbol.signature || cSymbol.name;
+                    if (cSymbol.documentation) {
+                        item.documentation = new vscode.MarkdownString(cSymbol.documentation);
+                    }
+                    item.sortText = '1_' + cSymbol.name; // Sort after built-ins but before user symbols
+                    completionItems.push(item);
+                });
+            }
 
             // Add keywords
             keywords.forEach(keyword => {
@@ -1222,16 +1398,115 @@ export function activate(context: vscode.ExtensionContext) {
             if (isExtensionDevelopment) {
                 console.log('HOVER CALLED at position:', position.line, position.character);
             }
-            
+
             const wordRange = document.getWordRangeAtPosition(position);
             const word = document.getText(wordRange);
-            
+            const lineText = document.lineAt(position.line).text;
+
             if (isExtensionDevelopment) {
                 console.log('Word under cursor:', word);
             }
-            
+
             if (!word) {
                 return undefined;
+            }
+            
+            // Check for method call pattern x.y(...) FIRST
+            // Look at the character before the word to see if there's a dot
+            const wordStart = wordRange ? wordRange.start.character : position.character;
+            if (wordStart > 0 && lineText[wordStart - 1] === '.') {
+                // This is a method call - find the object name
+                const textBeforeDot = lineText.substring(0, wordStart - 1);
+                const objectMatch = textBeforeDot.match(/(\w+)$/);
+                
+                if (objectMatch) {
+                    const objectName = objectMatch[1];
+                    const symbols = parseSymbols(document);
+                    
+                    // First check if it's a user-defined function
+                    const funcSymbol = symbols.find(s => s.type === 'function' && s.name === word);
+                    
+                    if (funcSymbol) {
+                        const markdown = new vscode.MarkdownString();
+                        
+                        // Build signature with object as first parameter: y(x, ...)
+                        let signature = `${funcSymbol.returnType || 'void'} ${funcSymbol.name}(${objectName}`;
+                        if (funcSymbol.parameters && funcSymbol.parameters.length > 1) {
+                            const restParams = funcSymbol.parameters.slice(1).map(p => `${p.type} ${p.name}`).join(', ');
+                            signature += ', ' + restParams;
+                        }
+                        signature += ')';
+                        markdown.appendCodeblock(signature, 'frscript');
+                        
+                        if (funcSymbol.documentation) {
+                            markdown.appendMarkdown('\n\n' + funcSymbol.documentation);
+                        }
+                        
+                        markdown.appendMarkdown('\n\n_Method call syntax (equivalent to calling the function with the object as first parameter)_');
+                        return new vscode.Hover(markdown);
+                    }
+                    
+                    // Check for built-in type methods
+                    const builtinMethods: Record<string, Record<string, { signature: string, description: string }>> = {
+                        'bytes': {
+                            'decode': {
+                                signature: 'str decode(bytes data)',
+                                description: 'Decode bytes to string'
+                            }
+                        },
+                        'str': {
+                            'encode': {
+                                signature: 'bytes encode(str text)',
+                                description: 'Encode string to bytes'
+                            },
+                            'upper': {
+                                signature: 'str upper(str text)',
+                                description: 'Convert string to uppercase'
+                            },
+                            'lower': {
+                                signature: 'str lower(str text)',
+                                description: 'Convert string to lowercase'
+                            },
+                            'strip': {
+                                signature: 'str strip(str text)',
+                                description: 'Remove leading and trailing whitespace'
+                            }
+                        },
+                        'list': {
+                            'append': {
+                                signature: 'void append(list lst, any item)',
+                                description: 'Append an item to the list'
+                            },
+                            'pop': {
+                                signature: 'any pop(list lst)',
+                                description: 'Remove and return the last item'
+                            }
+                        }
+                    };
+                    
+                    // Try to infer the object's type
+                    const varSymbol = symbols.find(s => s.type === 'variable' && s.name === objectName);
+                    let objectType = varSymbol?.varType;
+                    
+                    // If not found as variable, check if it's a function return type
+                    if (!objectType) {
+                        // Check if it's a function call result
+                        const funcCallMatch = textBeforeDot.match(/(\w+)\s*\([^)]*\)\s*$/);
+                        if (funcCallMatch) {
+                            const calledFunc = symbols.find(s => s.type === 'function' && s.name === funcCallMatch[1]);
+                            objectType = calledFunc?.returnType;
+                        }
+                    }
+                    
+                    if (objectType && builtinMethods[objectType] && builtinMethods[objectType][word]) {
+                        const method = builtinMethods[objectType][word];
+                        const markdown = new vscode.MarkdownString();
+                        markdown.appendCodeblock(method.signature, 'frscript');
+                        markdown.appendMarkdown('\n\n' + method.description);
+                        markdown.appendMarkdown(`\n\n_Method on ${objectType}_`);
+                        return new vscode.Hover(markdown);
+                    }
+                }
             }
 
             // Check built-in functions
@@ -1253,8 +1528,14 @@ export function activate(context: vscode.ExtensionContext) {
                 const markdown = new vscode.MarkdownString();
 
                 if (symbol.type === 'function') {
-                    const line = document.lineAt(symbol.line).text;
-                    markdown.appendCodeblock(line.trim(), 'frscript');
+                    // Build function signature with proper formatting
+                    let signature = `${symbol.returnType || 'void'} ${symbol.name}(`;
+                    if (symbol.parameters && symbol.parameters.length > 0) {
+                        const params = symbol.parameters.map(p => `${p.type} ${p.name}`).join(', ');
+                        signature += params;
+                    }
+                    signature += ')';
+                    markdown.appendCodeblock(signature, 'frscript');
                 } else if (symbol.type === 'variable') {
                     // Variable - show type and declaration
                     const line = document.lineAt(symbol.line).text;
@@ -1264,7 +1545,7 @@ export function activate(context: vscode.ExtensionContext) {
                     let structCode = `struct ${symbol.name} {\n`;
                     if (symbol.fields && symbol.fields.length > 0) {
                         symbol.fields.forEach(field => {
-                            structCode += `    ${field.type} ${field.name};\n`;
+                            structCode += `    ${field.type} ${field.name}\n`;
                         });
                     }
                     structCode += '}';
@@ -1278,14 +1559,33 @@ export function activate(context: vscode.ExtensionContext) {
                 return new vscode.Hover(markdown);
             }
 
+            // Check C imported symbols
+            const cImports = parseCImports(document);
+            if (cImports.imports.length > 0) {
+                // Collect all C symbols from imported headers
+                const cSymbols: CSymbolInfo[] = [];
+                for (const imp of cImports.imports) {
+                    cSymbols.push(...parseCSymbols(imp.path));
+                }
+
+                const cSymbol = cSymbols.find(s => s.name === word);
+                if (cSymbol) {
+                    const markdown = new vscode.MarkdownString();
+                    markdown.appendCodeblock(cSymbol.signature || cSymbol.name, 'c');
+                    if (cSymbol.documentation) {
+                        markdown.appendMarkdown('\n\n' + cSymbol.documentation);
+                    }
+                    markdown.appendMarkdown('\n\n🔗 From C import');
+                    return new vscode.Hover(markdown);
+                }
+            }
+
             // Check for Python attribute access (e.g., ui.Window or window.title)
-            const lineText = document.lineAt(position.line).text;
-            
             // Get the end of the current word to check for module.attribute pattern
             const wordEndIndex = wordRange ? wordRange.end.character : position.character;
             const textUpToWordEnd = lineText.substring(0, wordEndIndex);
             const attributeMatch = textUpToWordEnd.match(/(\w+)\.(\w+)$/);
-            
+
             if (isExtensionDevelopment) {
                 console.log('Hover debug:', {
                     word,
@@ -1296,19 +1596,41 @@ export function activate(context: vscode.ExtensionContext) {
                     lineText
                 });
             }
-            
+
             if (attributeMatch) {
                 const objectName = attributeMatch[1];
                 const attributeName = attributeMatch[2];
                 
+                // First check if it's a Frscript method call (x.y(...) where y is a function)
+                const funcSymbol = symbols.find(s => s.type === 'function' && s.name === attributeName);
+                if (funcSymbol) {
+                    const markdown = new vscode.MarkdownString();
+                    
+                    // Build signature with object as first parameter: y(x, ...)
+                    let signature = `${funcSymbol.returnType || 'void'} ${funcSymbol.name}(${objectName}`;
+                    if (funcSymbol.parameters && funcSymbol.parameters.length > 1) {
+                        const restParams = funcSymbol.parameters.slice(1).map(p => `${p.type} ${p.name}`).join(', ');
+                        signature += ', ' + restParams;
+                    }
+                    signature += ')';
+                    markdown.appendCodeblock(signature, 'frscript');
+                    
+                    if (funcSymbol.documentation) {
+                        markdown.appendMarkdown('\n\n' + funcSymbol.documentation);
+                    }
+                    
+                    markdown.appendMarkdown('\n\n_Method call syntax (equivalent to calling the function with the object as first parameter)_');
+                    return new vscode.Hover(markdown);
+                }
+
                 // Get Python imports
                 const pythonImports = pythonProvider.getImports(document);
-                
+
                 // First check if it's a module
-                const pythonImport = pythonImports.find(imp => 
+                const pythonImport = pythonImports.find(imp =>
                     imp.alias === objectName || imp.name === objectName
                 );
-                
+
                 if (isExtensionDevelopment) {
                     console.log('Python import check:', {
                         objectName,
@@ -1317,30 +1639,30 @@ export function activate(context: vscode.ExtensionContext) {
                         allImports: pythonImports
                     });
                 }
-                
+
                 if (pythonImport) {
                     const actualModuleName = pythonImport.name;
-                    
+
                     // Get Python signature asynchronously
                     const signature = await pythonProvider.getPythonSignature(actualModuleName, attributeName);
-                    
+
                     if (isExtensionDevelopment) {
                         console.log('Got signature:', signature);
                     }
-                    
+
                     if (signature) {
                         const markdown = new vscode.MarkdownString();
                         const lines = signature.split('\n');
-                        
+
                         // First line is the signature
                         markdown.appendCodeblock(lines[0], 'python');
-                        
+
                         // If there's a docstring, add it
                         if (lines.length > 1 && lines[1].startsWith('DOC:')) {
                             const docstring = lines[1].substring(4);
                             markdown.appendMarkdown('\n\n' + docstring);
                         }
-                        
+
                         markdown.appendMarkdown(`\n\n📦 From module: \`${actualModuleName}\``);
                         return new vscode.Hover(markdown);
                     } else {
@@ -1356,33 +1678,33 @@ export function activate(context: vscode.ExtensionContext) {
                     const text = document.getText();
                     const varAssignPattern = new RegExp(`pyobj\\s+${objectName}\\s*=\\s*(\\w+)\\.(\\w+)\\s*\\(`, 'g');
                     const varMatch = varAssignPattern.exec(text);
-                    
+
                     if (varMatch) {
                         const moduleName = varMatch[1];
                         const className = varMatch[2];
-                        
+
                         // Find the Python module
-                        const moduleImport = pythonImports.find(imp => 
+                        const moduleImport = pythonImports.find(imp =>
                             imp.alias === moduleName || imp.name === moduleName
                         );
-                        
+
                         if (moduleImport) {
                             // Get the attribute signature from the class
                             const signature = await pythonProvider.getPythonSignature(moduleImport.name, `${className}.${attributeName}`);
-                            
+
                             if (signature) {
                                 const markdown = new vscode.MarkdownString();
                                 const lines = signature.split('\n');
-                                
+
                                 // First line is the signature
                                 markdown.appendCodeblock(lines[0], 'python');
-                                
+
                                 // If there's a docstring, add it
                                 if (lines.length > 1 && lines[1].startsWith('DOC:')) {
                                     const docstring = lines[1].substring(4);
                                     markdown.appendMarkdown('\n\n' + docstring);
                                 }
-                                
+
                                 markdown.appendMarkdown(`\n\n📦 From class: \`${moduleImport.name}.${className}\``);
                                 return new vscode.Hover(markdown);
                             }
@@ -1393,13 +1715,13 @@ export function activate(context: vscode.ExtensionContext) {
 
             // Check Python imports (module names)
             const pythonImports = pythonProvider.getImports(document);
-            const pythonImport = pythonImports.find(imp => 
+            const pythonImport = pythonImports.find(imp =>
                 imp.name === word || imp.alias === word
             );
             if (pythonImport) {
                 const markdown = new vscode.MarkdownString();
-                const displayName = pythonImport.alias ? 
-                    `${pythonImport.name} (as ${pythonImport.alias})` : 
+                const displayName = pythonImport.alias ?
+                    `${pythonImport.name} (as ${pythonImport.alias})` :
                     pythonImport.name;
                 markdown.appendCodeblock(`from python import ${displayName}`, 'frscript');
                 markdown.appendMarkdown(`\n\n📦 **Python module**: \`${pythonImport.name}\``);
@@ -1426,25 +1748,25 @@ export function activate(context: vscode.ExtensionContext) {
             if (pythonMatch) {
                 const moduleName = pythonMatch[1];
                 const functionName = pythonMatch[2];
-                
+
                 // Check if it's a Python module
                 const pythonImports = pythonProvider.getImports(document);
-                const pythonImport = pythonImports.find(imp => 
+                const pythonImport = pythonImports.find(imp =>
                     imp.alias === moduleName || imp.name === moduleName
                 );
-                
+
                 if (pythonImport) {
                     const signature = await pythonProvider.getPythonSignature(pythonImport.name, functionName);
-                    
+
                     if (signature) {
                         const lines = signature.split('\n');
                         const signatureHelp = new vscode.SignatureHelp();
                         const sigInfo = new vscode.SignatureInformation(lines[0]);
-                        
+
                         if (lines.length > 1 && lines[1].startsWith('DOC:')) {
                             sigInfo.documentation = new vscode.MarkdownString(lines[1].substring(4));
                         }
-                        
+
                         signatureHelp.signatures = [sigInfo];
                         signatureHelp.activeSignature = 0;
                         signatureHelp.activeParameter = 0;
@@ -1584,15 +1906,30 @@ export function activate(context: vscode.ExtensionContext) {
 
     // 9. Semantic token provider (for better highlighting)
     const legend = new vscode.SemanticTokensLegend(
-        ['function', 'variable', 'parameter', 'struct', 'property'],
-        ['declaration', 'readonly', 'deprecated']
+        ['function', 'variable', 'parameter', 'struct', 'property', 'method'],
+        ['declaration', 'readonly', 'deprecated', 'defaultLibrary']
     );
 
     const semanticTokensProvider = vscode.languages.registerDocumentSemanticTokensProvider('frscript', {
         provideDocumentSemanticTokens(document: vscode.TextDocument): vscode.SemanticTokens {
             const tokensBuilder = new vscode.SemanticTokensBuilder(legend);
             const symbols = parseSymbols(document);
+            const cImports = parseCImports(document);
 
+            // Collect C function names
+            const cFunctions: Set<string> = new Set();
+            if (cImports.imports.length > 0) {
+                for (const imp of cImports.imports) {
+                    const cSymbols = parseCSymbols(imp.path);
+                    cSymbols.forEach(s => {
+                        if (s.type === 'function') {
+                            cFunctions.add(s.name);
+                        }
+                    });
+                }
+            }
+
+            // Highlight declarations
             symbols.forEach(symbol => {
                 const line = document.lineAt(symbol.line);
                 const index = line.text.indexOf(symbol.name);
@@ -1614,6 +1951,25 @@ export function activate(context: vscode.ExtensionContext) {
                     );
                 }
             });
+
+            // Highlight C function calls with defaultLibrary modifier
+            for (let i = 0; i < document.lineCount; i++) {
+                const line = document.lineAt(i).text;
+                const funcCallRegex = /\b([a-zA-Z_][a-zA-Z0-9_]*)\s*\(/g;
+                let match;
+
+                while ((match = funcCallRegex.exec(line)) !== null) {
+                    const funcName = match[1];
+                    if (cFunctions.has(funcName)) {
+                        // Highlight as C function (method token type with defaultLibrary modifier)
+                        tokensBuilder.push(
+                            new vscode.Range(i, match.index, i, match.index + funcName.length),
+                            'method',
+                            ['defaultLibrary']
+                        );
+                    }
+                }
+            }
 
             return tokensBuilder.build();
         }
@@ -1660,23 +2016,33 @@ export function activate(context: vscode.ExtensionContext) {
     const foldingProvider = vscode.languages.registerFoldingRangeProvider('frscript', {
         provideFoldingRanges(document: vscode.TextDocument): vscode.FoldingRange[] {
             const ranges: vscode.FoldingRange[] = [];
-            const stack: number[] = [];
+            const braceStack: { line: number, depth: number }[] = [];
+            const regionStack: number[] = [];
+            let maxDepth = 8; // Support up to 8 levels of nesting
 
             for (let i = 0; i < document.lineCount; i++) {
                 const line = document.lineAt(i).text;
 
-                if (line.includes('{')) {
-                    stack.push(i);
-                } else if (line.includes('}') && stack.length > 0) {
-                    const start = stack.pop()!;
-                    ranges.push(new vscode.FoldingRange(start, i));
+                // Count opening and closing braces on this line
+                for (let j = 0; j < line.length; j++) {
+                    const char = line[j];
+
+                    if (char === '{') {
+                        braceStack.push({ line: i, depth: braceStack.length });
+                    } else if (char === '}' && braceStack.length > 0) {
+                        const start = braceStack.pop()!;
+                        // Only create folding ranges for nesting up to maxDepth
+                        if (start.depth < maxDepth) {
+                            ranges.push(new vscode.FoldingRange(start.line, i));
+                        }
+                    }
                 }
 
                 // Support region comments
                 if (line.match(/\/\/\s*region/)) {
-                    stack.push(i);
-                } else if (line.match(/\/\/\s*endregion/) && stack.length > 0) {
-                    const start = stack.pop()!;
+                    regionStack.push(i);
+                } else if (line.match(/\/\/\s*endregion/) && regionStack.length > 0) {
+                    const start = regionStack.pop()!;
                     ranges.push(new vscode.FoldingRange(start, i, vscode.FoldingRangeKind.Region));
                 }
             }
@@ -1685,56 +2051,8 @@ export function activate(context: vscode.ExtensionContext) {
         }
     });
 
-    // 14. Inlay hints provider (parameter names)
-    const inlayHintsProvider = vscode.languages.registerInlayHintsProvider('frscript', {
-        provideInlayHints(document: vscode.TextDocument, range: vscode.Range): vscode.InlayHint[] {
-            const hints: vscode.InlayHint[] = [];
-            const symbols = parseSymbols(document);
-            const functions = symbols.filter(s => s.type === 'function');
-
-            for (let i = range.start.line; i <= range.end.line; i++) {
-                const line = document.lineAt(i);
-                const {text} = line;
-
-                // Skip function definitions (lines that start with a return type)
-                if (text.match(/^\s*(void|int|float|str|string|bool|list|dict|set|bytes|any|pyobject|pyobj)\s+\w+\s*\(/)) {
-                    continue;
-                }
-
-                // Match function calls only
-                const funcCallRegex = /(\w+)\s*\(([^)]*)\)/g;
-                let match;
-
-                while ((match = funcCallRegex.exec(text)) !== null) {
-                    const funcName = match[1];
-                    const argsText = match[2];
-
-                    const func = functions.find(f => f.name === funcName);
-                    if (func && func.parameters && argsText.trim()) {
-                        const args = argsText.split(',').map(a => a.trim());
-                        let currentPos = match.index + funcName.length + 1;
-
-                        args.forEach((arg, idx) => {
-                            if (func.parameters && func.parameters[idx]) {
-                                const param = func.parameters[idx];
-                                const argStart = text.indexOf(arg, currentPos);
-
-                                const hint = new vscode.InlayHint(
-                                    new vscode.Position(i, argStart),
-                                    `${param.name}: `,
-                                    vscode.InlayHintKind.Parameter
-                                );
-                                hints.push(hint);
-                                currentPos = argStart + arg.length;
-                            }
-                        });
-                    }
-                }
-            }
-
-            return hints;
-        }
-    });
+    // 14. Inlay hints provider - DISABLED
+    // Removed to avoid cluttering the editor with parameter name hints
 
     context.subscriptions.push(
         completionProvider,
@@ -1748,8 +2066,8 @@ export function activate(context: vscode.ExtensionContext) {
         // formattingProvider removed - now handled by registerFormattingProviders
         semanticTokensProvider,
         callHierarchyProvider,
-        foldingProvider,
-        inlayHintsProvider
+        foldingProvider
+        // inlayHintsProvider removed
     );
 
     // Register all new commands

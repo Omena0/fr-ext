@@ -33,6 +33,58 @@
     "intellisense"
   ],
   "contributes": {
+    "configurationDefaults": {
+      "editor.tokenColorCustomizations": {
+        "[*]": {
+          "textMateRules": [
+            {
+              "scope": "support.function.frbc",
+              "settings": {
+                "foreground": "#9CDCFE"
+              }
+            },
+            {
+              "scope": "keyword.control.instruction.frbc",
+              "settings": {
+                "foreground": "#5aa7d3"
+              }
+            },
+            {
+              "scope": "string.unquoted.c-header.fr, string.unquoted.c-library.fr",
+              "settings": {
+                "foreground": "#CE9178"
+              }
+            },
+            {
+              "scope": "keyword.control.source.frbc",
+              "settings": {
+                "foreground": "#569CD6",
+                "fontStyle": "bold"
+              }
+            },
+            {
+              "scope": "entity.name.filename.frbc",
+              "settings": {
+                "foreground": "#9CDCFE"
+              }
+            },
+            {
+              "scope": "keyword.control.import.c.frbc, keyword.control.link.c.frbc",
+              "settings": {
+                "foreground": "#569CD6",
+                "fontStyle": "bold"
+              }
+            },
+            {
+              "scope": "string.unquoted.c-header.frbc, string.unquoted.c-library.frbc",
+              "settings": {
+                "foreground": "#CE9178"
+              }
+            }
+          ]
+        }
+      }
+    },
     "languages": [
       {
         "id": "frscript",
@@ -44,6 +96,16 @@
           ".fr"
         ],
         "configuration": "./language-configuration.json"
+      },
+      {
+        "id": "frscript-bytecode",
+        "aliases": [
+          "Frscript Bytecode",
+          "Fr Bytecode"
+        ],
+        "extensions": [
+          ".bc"
+        ]
       }
     ],
     "grammars": [
@@ -51,6 +113,11 @@
         "language": "frscript",
         "scopeName": "source.fr",
         "path": "./syntaxes/frscript.tmLanguage.json"
+      },
+      {
+        "language": "frscript-bytecode",
+        "scopeName": "source.frbc",
+        "path": "./syntaxes/frscript-bytecode.tmLanguage.json"
       }
     ],
     "snippets": [
@@ -240,17 +307,17 @@
         },
         "frscript.metrics.maxComplexity": {
           "type": "number",
-          "default": 20,
+          "default": 40,
           "description": "Maximum cyclomatic complexity"
         },
         "frscript.metrics.maxFunctionLength": {
           "type": "number",
-          "default": 200,
+          "default": 500,
           "description": "Maximum function length in lines"
         },
         "frscript.metrics.maxNestingDepth": {
           "type": "number",
-          "default": 4,
+          "default": 6,
           "description": "Maximum nesting depth"
         },
         "frscript.python.validateImports": {

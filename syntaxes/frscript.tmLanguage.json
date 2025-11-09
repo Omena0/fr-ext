@@ -10,6 +10,9 @@
       "include": "#directives"
     },
     {
+      "include": "#c-interop"
+    },
+    {
       "include": "#strings"
     },
     {
@@ -35,6 +38,9 @@
     },
     {
       "include": "#constants"
+    },
+    {
+      "include": "#variable-declaration"
     },
     {
       "include": "#function-call"
@@ -68,8 +74,36 @@
     "directives": {
       "patterns": [
         {
+          "name": "meta.embedded.block.bytecode",
+          "begin": "^\\s*(#bytecode)\\b",
+          "beginCaptures": {
+            "1": {
+              "name": "keyword.control.directive.fr"
+            }
+          },
+          "end": "^\\s*(#bytecode\\s+end)\\b",
+          "endCaptures": {
+            "1": {
+              "name": "keyword.control.directive.fr"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.frbc"
+            }
+          ]
+        },
+        {
           "name": "keyword.control.directive.fr",
-          "match": "^\\s*#(label|bytecode|global)\\b"
+          "match": "^\\s*#(label|global|pragma)\\b"
+        }
+      ]
+    },
+    "c-interop": {
+      "patterns": [
+        {
+          "name": "keyword.control.import.c.fr",
+          "match": "^\\s*(c_import|c_link)\\b"
         }
       ]
     },
@@ -313,10 +347,25 @@
         }
       ]
     },
+    "variable-declaration": {
+      "patterns": [
+        {
+          "match": "\\b([A-Z][a-zA-Z0-9_]*)\\s+([a-zA-Z_][a-zA-Z0-9_]*)\\s*=",
+          "captures": {
+            "1": {
+              "name": "storage.type.struct.fr"
+            },
+            "2": {
+              "name": "variable.other.fr"
+            }
+          }
+        }
+      ]
+    },
     "function-declaration": {
       "patterns": [
         {
-          "match": "\\b(void|int|float|str|string|bool|list|dict|set|bytes|any|pyobject|pyobj)\\s+([a-zA-Z_][a-zA-Z0-9_]*)\\s*\\(([^)]*)\\)",
+          "match": "\\b(void|int|float|str|string|bool|list|dict|set|bytes|any|pyobject|pyobj|[A-Z][a-zA-Z0-9_]*)\\s+([a-zA-Z_][a-zA-Z0-9_]*)\\s*\\(([^)]*)\\)",
           "captures": {
             "1": {
               "name": "storage.type.function.fr"
@@ -327,7 +376,7 @@
             "3": {
               "patterns": [
                 {
-                  "match": "(void|int|float|str|string|bool|list|dict|set|bytes|any|pyobject|pyobj)\\s+([a-zA-Z_][a-zA-Z0-9_]*)",
+                  "match": "(void|int|float|str|string|bool|list|dict|set|bytes|any|pyobject|pyobj|[A-Z][a-zA-Z0-9_]*)\\s+([a-zA-Z_][a-zA-Z0-9_]*)",
                   "captures": {
                     "1": {
                       "name": "storage.type.fr"
@@ -354,7 +403,7 @@
     "function-parameters": {
       "patterns": [
         {
-          "match": "\\s*(void|int|float|str|string|bool|list|dict|set|bytes|any|pyobject|pyobj)\\s+([a-zA-Z_][a-zA-Z0-9_]*)",
+          "match": "\\s*(void|int|float|str|string|bool|list|dict|set|bytes|any|pyobject|pyobj|[A-Z][a-zA-Z0-9_]*)\\s+([a-zA-Z_][a-zA-Z0-9_]*)",
           "captures": {
             "1": {
               "name": "storage.type.fr"
@@ -377,8 +426,16 @@
     "function-call": {
       "patterns": [
         {
+          "match": "\\b([A-Z][a-zA-Z0-9_]*)\\s*(?=\\()",
+          "captures": {
+            "1": {
+              "name": "meta.embedded.line.fr"
+            }
+          }
+        },
+        {
           "name": "meta.function-call.fr",
-          "begin": "\\b([a-zA-Z_][a-zA-Z0-9_]*)\\s*\\(",
+          "begin": "\\b([a-z_][a-zA-Z0-9_]*)\\s*\\(",
           "beginCaptures": {
             "1": {
               "name": "entity.name.function.call.fr"
