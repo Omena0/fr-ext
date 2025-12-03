@@ -158,11 +158,6 @@ function parseDocstrings(document: vscode.TextDocument): Map<number, DocstringIn
     return docstrings;
 }
 
-// Helper to check if a type is valid (built-in or struct name)
-function isValidType(typeName: string, structs: string[]): boolean {
-    return types.includes(typeName) || structs.includes(typeName);
-}
-
 // Parse C imports and links from document
 function parseCImports(document: vscode.TextDocument): { imports: CImportInfo[], links: CLinkInfo[] } {
     const imports: CImportInfo[] = [];
