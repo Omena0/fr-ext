@@ -119,7 +119,7 @@ const builtinFunctions: FunctionInfo[] = [
 ];
 
 const keywords = ['if', 'elif', 'else', 'while', 'for', 'in', 'switch', 'case', 'default', 'break', 'continue', 'return', 'assert', 'const', 'struct', 'py_import', 'from', 'as', 'try', 'except', 'raise', 'goto', 'global', 'c_import', 'c_link'];
-const types = ['void', 'int', 'float', 'str', 'string', 'bool', 'list', 'dict', 'set', 'bytes', 'any', 'pyobject', 'pyobj'];
+const types = ['void', 'int', 'float', 'str', 'string', 'bool', 'list', 'dict', 'set', 'bytes', 'any', 'pyobject', 'pyobj', 'function'];
 
 // Extract docstrings from document
 function parseDocstrings(document: vscode.TextDocument): Map<number, DocstringInfo> {
