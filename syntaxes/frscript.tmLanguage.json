@@ -319,7 +319,7 @@
       "patterns": [
         {
           "name": "storage.type.fr",
-          "match": "\\b(void|int|float|str|string|bool|list|dict|set|bytes|any|pyobject|pyobj)\\b"
+          "match": "\\b(void|int|float|str|string|bool|list|dict|set|bytes|any|pyobject|pyobj|function)\\b"
         }
       ]
     },
