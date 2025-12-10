@@ -18,7 +18,7 @@ export class DocumentationProvider {
         const { text } = line;
 
         // Check if this is a function declaration
-        const funcMatch = text.match(/^\s*(void|int|float|str|bool|list|dict|any|pyobject)\s+(\w+)\s*\(([^)]*)\)/);
+        const funcMatch = text.match(/^\s*(void|int|float|str|string|bool|list|dict|set|bytes|any|pyobject|pyobj|function)\s+(\w+)\s*\(([^)]*)\)/);
         if (!funcMatch) {
             return null;
         }
@@ -33,7 +33,7 @@ export class DocumentationProvider {
             const paramList = paramsText.split(',');
             paramList.forEach(param => {
                 const trimmed = param.trim();
-                const typedMatch = trimmed.match(/^(void|int|float|str|bool|list|dict|any|pyobject|pyobj)\s+(\w+)$/);
+                const typedMatch = trimmed.match(/^(void|int|float|str|string|bool|list|dict|set|bytes|any|pyobject|pyobj|function)\s+(\w+)$/);
                 if (typedMatch) {
                     params.push({ type: typedMatch[1], name: typedMatch[2] });
                 } else {
@@ -202,7 +202,7 @@ export class DocumentationProvider {
                 // Check if function already has documentation
                 const hasDoc = i > 0 && document.lineAt(i - 1).text.trim().startsWith('///');
                 
-                if (!hasDoc && text.match(/^\s*(void|int|float|str|bool|list|dict|any|pyobject)\s+\w+\s*\(/)) {
+                if (!hasDoc && text.match(/^\s*(void|int|float|str|string|bool|list|dict|set|bytes|any|pyobject|pyobj|function)\s+\w+\s*\(/)) {
                     const funcEdit = this.generateDocstring(document, new vscode.Position(i, 0));
                     if (funcEdit) {
                         // Merge edits

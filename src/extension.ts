@@ -772,12 +772,25 @@ function validateDocument(document: vscode.TextDocument) {
           return;
         }  // main is always "used"
 
-        // Search for function calls
+        // Check if function has a decorator (decorated functions are considered used)
+        if (func.line > 0) {
+            const prevLine = document.lineAt(func.line - 1).text.trim();
+            if (prevLine.startsWith('@')) {
+                return;  // Has decorator, considered used
+            }
+        }
+
+        // Search for function calls: funcname(
         const callRegex = new RegExp(`\\b${func.name}\\s*\\(`, 'g');
         const calls = allText.match(callRegex) || [];
 
+        // Search for function references (used as argument or assigned to variable)
+        // Matches: funcname) or funcname, or funcname] or = funcname or (funcname, etc.
+        const refRegex = new RegExp(`[\\(,=\\[]\\s*${func.name}\\s*[\\),\\]\\s]|[\\(,]\\s*${func.name}\\s*$`, 'gm');
+        const refs = allText.match(refRegex) || [];
+
         // Subtract 1 for the definition itself
-        if (calls.length <= 1) {
+        if (calls.length <= 1 && refs.length === 0) {
             const line = document.lineAt(func.line);
             const start = line.text.indexOf(func.name);
             const range = new vscode.Range(func.line, start, func.line, start + func.name.length);

@@ -38,6 +38,25 @@
         "[*]": {
           "textMateRules": [
             {
+              "scope": "keyword.other.test-marker.fr",
+              "settings": {
+                "foreground": "#FF5555",
+                "fontStyle": "bold"
+              }
+            },
+            {
+              "scope": "comment.line.test.fr",
+              "settings": {
+                "foreground": "#D4D4D4"
+              }
+            },
+            {
+              "scope": "constant.character.escape.test.fr",
+              "settings": {
+                "foreground": "#FF79C6"
+              }
+            },
+            {
               "scope": "support.function.frbc",
               "settings": {
                 "foreground": "#9CDCFE"

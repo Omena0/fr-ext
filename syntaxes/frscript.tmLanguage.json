@@ -7,6 +7,9 @@
       "include": "#comments"
     },
     {
+      "include": "#decorators"
+    },
+    {
       "include": "#directives"
     },
     {
@@ -37,6 +40,9 @@
       "include": "#python-interop"
     },
     {
+      "include": "#wasm-api"
+    },
+    {
       "include": "#constants"
     },
     {
@@ -59,6 +65,25 @@
     "comments": {
       "patterns": [
         {
+          "name": "comment.line.test.fr",
+          "begin": "^\\s*(//)(\\s*)(!)\\s*",
+          "end": "$",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.comment.fr"
+            },
+            "3": {
+              "name": "keyword.other.test-marker.fr"
+            }
+          },
+          "patterns": [
+            {
+              "name": "constant.character.escape.test.fr",
+              "match": "\\\\[nrt]"
+            }
+          ]
+        },
+        {
           "name": "comment.line.double-slash.fr",
           "begin": "//",
           "end": "$",
@@ -68,6 +93,25 @@
               "match": "//"
             }
           ]
+        }
+      ]
+    },
+    "decorators": {
+      "patterns": [
+        {
+          "name": "meta.decorator.fr",
+          "match": "^\\s*(@)(\\w+)(?:\\(([^)]*)\\))?",
+          "captures": {
+            "1": {
+              "name": "punctuation.definition.decorator.fr"
+            },
+            "2": {
+              "name": "entity.name.function.decorator.fr"
+            },
+            "3": {
+              "name": "meta.decorator.arguments.fr"
+            }
+          }
         }
       ]
     },
@@ -138,7 +182,7 @@
         {
           "name": "string.interpolated.fr",
           "begin": "f\"",
-          "end": "\"",
+          "end": "(?<!\\\\)\"",
           "beginCaptures": {
             "0": {
               "name": "punctuation.definition.string.begin.fr"
@@ -151,24 +195,7 @@
           },
           "patterns": [
             {
-              "name": "meta.embedded.expression.fr",
-              "begin": "\\{",
-              "end": "\\}",
-              "beginCaptures": {
-                "0": {
-                  "name": "punctuation.section.embedded.begin.fr"
-                }
-              },
-              "endCaptures": {
-                "0": {
-                  "name": "punctuation.section.embedded.end.fr"
-                }
-              },
-              "patterns": [
-                {
-                  "include": "#expression"
-                }
-              ]
+              "include": "#fstring-interpolation"
             },
             {
               "name": "constant.character.escape.fr",
@@ -179,7 +206,7 @@
         {
           "name": "string.interpolated.fr",
           "begin": "f'",
-          "end": "'",
+          "end": "(?<!\\\\)'",
           "beginCaptures": {
             "0": {
               "name": "punctuation.definition.string.begin.fr"
@@ -192,28 +219,38 @@
           },
           "patterns": [
             {
-              "name": "meta.embedded.expression.fr",
-              "begin": "\\{",
-              "end": "\\}",
-              "beginCaptures": {
-                "0": {
-                  "name": "punctuation.section.embedded.begin.fr"
-                }
-              },
-              "endCaptures": {
-                "0": {
-                  "name": "punctuation.section.embedded.end.fr"
-                }
-              },
-              "patterns": [
-                {
-                  "include": "#expression"
-                }
-              ]
+              "include": "#fstring-interpolation"
             },
             {
               "name": "constant.character.escape.fr",
               "match": "\\\\(n|t|r|\\\\|\"|'|\\{|\\})"
+            }
+          ]
+        }
+      ]
+    },
+    "fstring-interpolation": {
+      "patterns": [
+        {
+          "name": "meta.embedded.expression.fr",
+          "begin": "\\{",
+          "end": "\\}",
+          "beginCaptures": {
+            "0": {
+              "name": "punctuation.section.embedded.begin.fr"
+            }
+          },
+          "endCaptures": {
+            "0": {
+              "name": "punctuation.section.embedded.end.fr"
+            }
+          },
+          "patterns": [
+            {
+              "include": "#fstrings"
+            },
+            {
+              "include": "#expression"
             }
           ]
         }
@@ -335,6 +372,55 @@
         }
       ]
     },
+    "wasm-api": {
+      "patterns": [
+        {
+          "comment": "DOM manipulation functions",
+          "name": "support.function.dom.fr",
+          "match": "\\b(dom_query|dom_query_all|dom_create|dom_get_body|dom_get_document|dom_set_text|dom_get_text|dom_set_html|dom_get_html|dom_set_attr|dom_get_attr|dom_remove_attr|dom_append|dom_prepend|dom_remove|dom_clone|dom_parent|dom_children|dom_add_class|dom_remove_class|dom_toggle_class|dom_has_class|dom_set_style|dom_get_style|dom_get_value|dom_set_value|dom_focus|dom_blur|dom_on|dom_off)\\b"
+        },
+        {
+          "comment": "Event handling functions",
+          "name": "support.function.event.fr",
+          "match": "\\b(event_prevent_default|event_stop_propagation|event_target)\\b"
+        },
+        {
+          "comment": "Timer functions",
+          "name": "support.function.timer.fr",
+          "match": "\\b(set_timeout|set_interval|clear_timeout|clear_interval)\\b"
+        },
+        {
+          "comment": "Console functions",
+          "name": "support.function.console.fr",
+          "match": "\\b(console_log|console_error|console_warn)\\b"
+        },
+        {
+          "comment": "Browser dialog functions",
+          "name": "support.function.dialog.fr",
+          "match": "\\b(alert|confirm|prompt)\\b"
+        },
+        {
+          "comment": "Location and storage functions",
+          "name": "support.function.browser.fr",
+          "match": "\\b(get_location_href|set_location_href|get_local_storage|set_local_storage|remove_local_storage)\\b"
+        },
+        {
+          "comment": "Fetch API functions",
+          "name": "support.function.fetch.fr",
+          "match": "\\b(fetch_text|fetch_json)\\b"
+        },
+        {
+          "comment": "JavaScript interop functions",
+          "name": "support.function.js-interop.fr",
+          "match": "\\b(js_call|js_eval|js_get_global|js_set_global)\\b"
+        },
+        {
+          "comment": "Performance functions",
+          "name": "support.function.performance.fr",
+          "match": "\\b(performance_now)\\b"
+        }
+      ]
+    },
     "constants": {
       "patterns": [
         {
@@ -376,6 +462,34 @@
             "3": {
               "patterns": [
                 {
+                  "match": "(\\*\\*)(\\s*)(void|int|float|str|string|bool|list|dict|set|bytes|any|pyobject|pyobj|function|[A-Z][a-zA-Z0-9_]*)?(\\s*)([a-zA-Z_][a-zA-Z0-9_]*)",
+                  "captures": {
+                    "1": {
+                      "name": "keyword.operator.unpacking.kwargs.fr"
+                    },
+                    "3": {
+                      "name": "storage.type.fr"
+                    },
+                    "5": {
+                      "name": "variable.parameter.fr"
+                    }
+                  }
+                },
+                {
+                  "match": "(\\*)(\\s*)(void|int|float|str|string|bool|list|dict|set|bytes|any|pyobject|pyobj|function|[A-Z][a-zA-Z0-9_]*)?(\\s*)([a-zA-Z_][a-zA-Z0-9_]*)",
+                  "captures": {
+                    "1": {
+                      "name": "keyword.operator.unpacking.args.fr"
+                    },
+                    "3": {
+                      "name": "storage.type.fr"
+                    },
+                    "5": {
+                      "name": "variable.parameter.fr"
+                    }
+                  }
+                },
+                {
                   "match": "(void|int|float|str|string|bool|list|dict|set|bytes|any|pyobject|pyobj|function|[A-Z][a-zA-Z0-9_]*)\\s+([a-zA-Z_][a-zA-Z0-9_]*)",
                   "captures": {
                     "1": {
@@ -402,6 +516,34 @@
     },
     "function-parameters": {
       "patterns": [
+        {
+          "match": "(\\*\\*)(\\s*)(void|int|float|str|string|bool|list|dict|set|bytes|any|pyobject|pyobj|function|[A-Z][a-zA-Z0-9_]*)?(\\s*)([a-zA-Z_][a-zA-Z0-9_]*)",
+          "captures": {
+            "1": {
+              "name": "keyword.operator.unpacking.kwargs.fr"
+            },
+            "3": {
+              "name": "storage.type.fr"
+            },
+            "5": {
+              "name": "variable.parameter.fr"
+            }
+          }
+        },
+        {
+          "match": "(\\*)(\\s*)(void|int|float|str|string|bool|list|dict|set|bytes|any|pyobject|pyobj|function|[A-Z][a-zA-Z0-9_]*)?(\\s*)([a-zA-Z_][a-zA-Z0-9_]*)",
+          "captures": {
+            "1": {
+              "name": "keyword.operator.unpacking.args.fr"
+            },
+            "3": {
+              "name": "storage.type.fr"
+            },
+            "5": {
+              "name": "variable.parameter.fr"
+            }
+          }
+        },
         {
           "match": "\\s*(void|int|float|str|string|bool|list|dict|set|bytes|any|pyobject|pyobj|function|[A-Z][a-zA-Z0-9_]*)\\s+([a-zA-Z_][a-zA-Z0-9_]*)",
           "captures": {
