@@ -38,6 +38,13 @@
         "[*]": {
           "textMateRules": [
             {
+              "scope": "keyword.operator.unpacking.args.fr, keyword.operator.unpacking.kwargs.fr",
+              "settings": {
+                "foreground": "#569CD6",
+                "fontStyle": "bold"
+              }
+            },
+            {
               "scope": "keyword.other.test-marker.fr",
               "settings": {
                 "foreground": "#FF5555",
@@ -53,7 +60,7 @@
             {
               "scope": "constant.character.escape.test.fr",
               "settings": {
-                "foreground": "#FF79C6"
+                "foreground": "#C586C0"
               }
             },
             {

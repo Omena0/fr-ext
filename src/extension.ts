@@ -262,6 +262,25 @@ function parseSymbols(document: vscode.TextDocument): SymbolInfo[] {
                 const paramList = paramsText.split(',');
                 for (const param of paramList) {
                     const trimmedParam = param.trim();
+                    // Try to match varargs parameter: type **name or type *name
+                    const varargsRegex = new RegExp(`^(${typePattern})\\s+\\*\\*(\\w+)$`);
+                    const varargsMatch = trimmedParam.match(varargsRegex);
+                    if (varargsMatch) {
+                        parameters.push({
+                            type: varargsMatch[1] + '**',  // kwargs
+                            name: varargsMatch[2]
+                        });
+                        continue;
+                    }
+                    const argsRegex = new RegExp(`^(${typePattern})\\s+\\*(\\w+)$`);
+                    const argsMatch = trimmedParam.match(argsRegex);
+                    if (argsMatch) {
+                        parameters.push({
+                            type: argsMatch[1] + '*',  // varargs
+                            name: argsMatch[2]
+                        });
+                        continue;
+                    }
                     // Try to match typed parameter: type name (including struct types)
                     const typedRegex = new RegExp(`^(${typePattern})\\s+(\\w+)$`);
                     const typedMatch = trimmedParam.match(typedRegex);
@@ -419,6 +438,13 @@ function validateDocument(document: vscode.TextDocument) {
         const line = document.lineAt(i);
         const {text} = line;
 
+        // Skip function definitions - they look like: type name(...)
+        // Skip function definitions - they look like: type name(...) { (brace optional)
+        const funcDefRegex = new RegExp(`^\\s*(${types.join('|')}|[A-Z][a-zA-Z0-9_]*)\\s+\\w+\\s*\\([^)]*\\)\\s*(\\{|$)`);
+        if (funcDefRegex.test(text)) {
+            continue;
+        }
+
         // Match function calls and struct construction: Name(args)
         const funcCallRegex = /(\w+)\s*\(([^)]*)\)/g;
         let match;
@@ -427,6 +453,11 @@ function validateDocument(document: vscode.TextDocument) {
             const funcName = match[1];
             const argsText = match[2].trim();
             const callStart = match.index;
+            
+            // Extra guard: if the whole line is a function definition, skip
+            if (funcDefRegex.test(text)) {
+                continue;
+            }
 
             // Check if it's a struct construction
             const structDef = userStructs.find(s => s.name === funcName);
@@ -495,8 +526,9 @@ function validateDocument(document: vscode.TextDocument) {
                 args.push(...argList);
             }
 
-            // Check argument count
-            if (args.length !== funcDef.parameters.length) {
+            // Check argument count (skip for varargs functions)
+            const hasVarargs = funcDef.parameters.some(p => p.type.endsWith('*'));
+            if (!hasVarargs && args.length !== funcDef.parameters.length) {
                 const range = new vscode.Range(i, callStart, i, callStart + match[0].length);
                 const diagnostic = new vscode.Diagnostic(
                     range,
