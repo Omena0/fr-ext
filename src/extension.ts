@@ -116,6 +116,83 @@ const builtinFunctions: FunctionInfo[] = [
     { name: 'strip', signature: 'strip(text: str) -> str', description: 'Remove leading and trailing whitespace', insertText: 'strip($1)$0' },
     { name: 'append', signature: 'append(lst: list, item: any)', description: 'Append an item to the list', insertText: 'append($1, $2)$0' },
     { name: 'pop', signature: 'pop(lst: list) -> any', description: 'Remove and return the last item from the list', insertText: 'pop($1)$0' },
+    
+    // Web/WASM Functions - DOM Query
+    { name: 'dom_query', signature: 'dom_query(selector: str) -> int', description: 'Query the DOM for an element by CSS selector', insertText: 'dom_query($1)$0', detail: 'DOM Query: Returns element handle or 0 if not found' },
+    { name: 'dom_query_all', signature: 'dom_query_all(selector: str) -> int', description: 'Query the DOM for all matching elements by CSS selector', insertText: 'dom_query_all($1)$0', detail: 'DOM Query: Returns list ID of matching elements' },
+    { name: 'dom_create', signature: 'dom_create(tag: str) -> int', description: 'Create a new DOM element with the specified tag', insertText: 'dom_create($1)$0', detail: 'DOM Manipulation: Returns element handle' },
+    { name: 'dom_get_body', signature: 'dom_get_body() -> int', description: 'Get the document body element', insertText: 'dom_get_body()$0', detail: 'DOM Query: Returns element handle for <body>' },
+    { name: 'dom_get_document', signature: 'dom_get_document() -> int', description: 'Get the document element', insertText: 'dom_get_document()$0', detail: 'DOM Query: Returns element handle for document' },
+    
+    // Web/WASM Functions - DOM Manipulation
+    { name: 'dom_set_text', signature: 'dom_set_text(elemId: int, text: str)', description: 'Set the text content of an element', insertText: 'dom_set_text($1, $2)$0', detail: 'DOM Manipulation: Sets textContent' },
+    { name: 'dom_get_text', signature: 'dom_get_text(elemId: int) -> str', description: 'Get the text content of an element', insertText: 'dom_get_text($1)$0', detail: 'DOM Manipulation: Returns textContent as string' },
+    { name: 'dom_set_html', signature: 'dom_set_html(elemId: int, html: str)', description: 'Set the HTML content of an element', insertText: 'dom_set_html($1, $2)$0', detail: 'DOM Manipulation: Sets innerHTML' },
+    { name: 'dom_get_html', signature: 'dom_get_html(elemId: int) -> str', description: 'Get the HTML content of an element', insertText: 'dom_get_html($1)$0', detail: 'DOM Manipulation: Returns innerHTML as string' },
+    { name: 'dom_set_attr', signature: 'dom_set_attr(elemId: int, name: str, value: str)', description: 'Set an attribute on an element', insertText: 'dom_set_attr($1, $2, $3)$0', detail: 'DOM Manipulation: Sets HTML attribute' },
+    { name: 'dom_get_attr', signature: 'dom_get_attr(elemId: int, name: str) -> str', description: 'Get an attribute from an element', insertText: 'dom_get_attr($1, $2)$0', detail: 'DOM Manipulation: Gets HTML attribute' },
+    { name: 'dom_remove_attr', signature: 'dom_remove_attr(elemId: int, name: str)', description: 'Remove an attribute from an element', insertText: 'dom_remove_attr($1, $2)$0', detail: 'DOM Manipulation: Removes HTML attribute' },
+    
+    // Web/WASM Functions - DOM Tree
+    { name: 'dom_append', signature: 'dom_append(parentId: int, childId: int)', description: 'Append a child element to a parent element', insertText: 'dom_append($1, $2)$0', detail: 'DOM Tree: appendChild()' },
+    { name: 'dom_prepend', signature: 'dom_prepend(parentId: int, childId: int)', description: 'Prepend a child element to a parent element', insertText: 'dom_prepend($1, $2)$0', detail: 'DOM Tree: prepend()' },
+    { name: 'dom_remove', signature: 'dom_remove(elemId: int)', description: 'Remove an element from the DOM', insertText: 'dom_remove($1)$0', detail: 'DOM Tree: Removes element from its parent' },
+    { name: 'dom_clone', signature: 'dom_clone(elemId: int, deep: bool) -> int', description: 'Clone an element (shallow or deep copy)', insertText: 'dom_clone($1, $2)$0', detail: 'DOM Tree: cloneNode()' },
+    { name: 'dom_parent', signature: 'dom_parent(elemId: int) -> int', description: 'Get the parent element of an element', insertText: 'dom_parent($1)$0', detail: 'DOM Tree: Returns parent element handle' },
+    { name: 'dom_children', signature: 'dom_children(elemId: int) -> int', description: 'Get all child elements of an element', insertText: 'dom_children($1)$0', detail: 'DOM Tree: Returns list of child element handles' },
+    
+    // Web/WASM Functions - CSS/Style
+    { name: 'dom_add_class', signature: 'dom_add_class(elemId: int, class: str)', description: 'Add a CSS class to an element', insertText: 'dom_add_class($1, $2)$0', detail: 'CSS: classList.add()' },
+    { name: 'dom_remove_class', signature: 'dom_remove_class(elemId: int, class: str)', description: 'Remove a CSS class from an element', insertText: 'dom_remove_class($1, $2)$0', detail: 'CSS: classList.remove()' },
+    { name: 'dom_toggle_class', signature: 'dom_toggle_class(elemId: int, class: str) -> bool', description: 'Toggle a CSS class on an element', insertText: 'dom_toggle_class($1, $2)$0', detail: 'CSS: classList.toggle()' },
+    { name: 'dom_has_class', signature: 'dom_has_class(elemId: int, class: str) -> bool', description: 'Check if an element has a CSS class', insertText: 'dom_has_class($1, $2)$0', detail: 'CSS: classList.contains()' },
+    { name: 'dom_set_style', signature: 'dom_set_style(elemId: int, prop: str, value: str)', description: 'Set a CSS style property on an element', insertText: 'dom_set_style($1, $2, $3)$0', detail: 'CSS: Sets inline style' },
+    { name: 'dom_get_style', signature: 'dom_get_style(elemId: int, prop: str) -> str', description: 'Get a CSS style property from an element', insertText: 'dom_get_style($1, $2)$0', detail: 'CSS: Gets inline style' },
+    
+    // Web/WASM Functions - Form Elements
+    { name: 'dom_get_value', signature: 'dom_get_value(elemId: int) -> str', description: 'Get the value of a form element', insertText: 'dom_get_value($1)$0', detail: 'Form: Returns input value' },
+    { name: 'dom_set_value', signature: 'dom_set_value(elemId: int, value: str)', description: 'Set the value of a form element', insertText: 'dom_set_value($1, $2)$0', detail: 'Form: Sets input value' },
+    { name: 'dom_focus', signature: 'dom_focus(elemId: int)', description: 'Focus on a form element', insertText: 'dom_focus($1)$0', detail: 'Form: focus()' },
+    { name: 'dom_blur', signature: 'dom_blur(elemId: int)', description: 'Blur (unfocus) a form element', insertText: 'dom_blur($1)$0', detail: 'Form: blur()' },
+    
+    // Web/WASM Functions - Events
+    { name: 'dom_on', signature: 'dom_on(elemId: int, event: str, callbackId: int)', description: 'Add an event listener to an element', insertText: 'dom_on($1, $2, $3)$0', detail: 'Events: addEventListener()' },
+    { name: 'dom_off', signature: 'dom_off(callbackId: int)', description: 'Remove an event listener', insertText: 'dom_off($1)$0', detail: 'Events: removeEventListener()' },
+    { name: 'event_prevent_default', signature: 'event_prevent_default()', description: 'Prevent the default action of an event', insertText: 'event_prevent_default()$0', detail: 'Events: preventDefault()' },
+    { name: 'event_stop_propagation', signature: 'event_stop_propagation()', description: 'Stop event propagation', insertText: 'event_stop_propagation()$0', detail: 'Events: stopPropagation()' },
+    { name: 'event_target', signature: 'event_target() -> int', description: 'Get the target element of the current event', insertText: 'event_target()$0', detail: 'Events: Returns target element handle' },
+    
+    // Web/WASM Functions - Timers
+    { name: 'set_timeout', signature: 'set_timeout(callbackId: int, ms: int) -> int', description: 'Schedule a callback to run after a delay', insertText: 'set_timeout($1, $2)$0', detail: 'Timers: setTimeout()' },
+    { name: 'set_interval', signature: 'set_interval(callbackId: int, ms: int) -> int', description: 'Schedule a callback to run repeatedly', insertText: 'set_interval($1, $2)$0', detail: 'Timers: setInterval()' },
+    { name: 'clear_timeout', signature: 'clear_timeout(timerId: int)', description: 'Cancel a scheduled timeout', insertText: 'clear_timeout($1)$0', detail: 'Timers: clearTimeout()' },
+    { name: 'clear_interval', signature: 'clear_interval(timerId: int)', description: 'Cancel a scheduled interval', insertText: 'clear_interval($1)$0', detail: 'Timers: clearInterval()' },
+    
+    // Web/WASM Functions - Console
+    { name: 'console_log', signature: 'console_log(text: str)', description: 'Log a message to the browser console', insertText: 'console_log($1)$0', detail: 'Console: console.log()' },
+    { name: 'console_error', signature: 'console_error(text: str)', description: 'Log an error to the browser console', insertText: 'console_error($1)$0', detail: 'Console: console.error()' },
+    { name: 'console_warn', signature: 'console_warn(text: str)', description: 'Log a warning to the browser console', insertText: 'console_warn($1)$0', detail: 'Console: console.warn()' },
+    
+    // Web/WASM Functions - Browser APIs
+    { name: 'alert', signature: 'alert(text: str)', description: 'Show an alert dialog', insertText: 'alert($1)$0', detail: 'Browser: alert()' },
+    { name: 'confirm', signature: 'confirm(text: str) -> bool', description: 'Show a confirmation dialog (returns true if OK)', insertText: 'confirm($1)$0', detail: 'Browser: confirm()' },
+    { name: 'prompt', signature: 'prompt(msg: str, default: str) -> str', description: 'Show a prompt dialog and return the user input', insertText: 'prompt($1, $2)$0', detail: 'Browser: prompt()' },
+    { name: 'get_location_href', signature: 'get_location_href() -> str', description: 'Get the current page URL', insertText: 'get_location_href()$0', detail: 'Browser: window.location.href (get)' },
+    { name: 'set_location_href', signature: 'set_location_href(url: str)', description: 'Navigate to a different URL', insertText: 'set_location_href($1)$0', detail: 'Browser: window.location.href (set)' },
+    
+    // Web/WASM Functions - Storage
+    { name: 'get_local_storage', signature: 'get_local_storage(key: str) -> str', description: 'Get a value from localStorage', insertText: 'get_local_storage($1)$0', detail: 'Storage: localStorage.getItem()' },
+    { name: 'set_local_storage', signature: 'set_local_storage(key: str, value: str)', description: 'Set a value in localStorage', insertText: 'set_local_storage($1, $2)$0', detail: 'Storage: localStorage.setItem()' },
+    { name: 'remove_local_storage', signature: 'remove_local_storage(key: str)', description: 'Remove a value from localStorage', insertText: 'remove_local_storage($1)$0', detail: 'Storage: localStorage.removeItem()' },
+    
+    // Web/WASM Functions - Fetch API
+    { name: 'fetch_text', signature: 'fetch_text(url: str, callbackId: int)', description: 'Fetch text from a URL asynchronously', insertText: 'fetch_text($1, $2)$0', detail: 'Fetch: Calls callback with response text' },
+    { name: 'fetch_json', signature: 'fetch_json(url: str, callbackId: int)', description: 'Fetch JSON from a URL asynchronously', insertText: 'fetch_json($1, $2)$0', detail: 'Fetch: Calls callback with parsed JSON' },
+    
+    // Web/WASM Functions - JS Interop
+    { name: 'js_call', signature: 'js_call(funcName: str, argsJson: str) -> str', description: 'Call a JavaScript function and return the result as JSON', insertText: 'js_call($1, $2)$0', detail: 'JS Interop: Execute arbitrary JS function' },
+    { name: 'js_eval', signature: 'js_eval(code: str) -> str', description: 'Evaluate JavaScript code and return the result as JSON', insertText: 'js_eval($1)$0', detail: 'JS Interop: Execute arbitrary JS code' },
+    { name: 'js_get_global', signature: 'js_get_global(name: str) -> str', description: 'Get a global JavaScript variable value as JSON', insertText: 'js_get_global($1)$0', detail: 'JS Interop: Access global JS variables' },
 ];
 
 const keywords = ['if', 'elif', 'else', 'while', 'for', 'in', 'switch', 'case', 'default', 'break', 'continue', 'return', 'assert', 'const', 'struct', 'py_import', 'from', 'as', 'try', 'except', 'raise', 'goto', 'global', 'c_import', 'c_link'];
@@ -380,19 +457,6 @@ function validateDocument(document: vscode.TextDocument) {
     for (let i = 0; i < document.lineCount; i++) {
         const line = document.lineAt(i);
         const {text} = line;
-
-        // Check for unclosed parentheses
-        const openParens = (text.match(/\(/g) || []).length;
-        const closeParens = (text.match(/\)/g) || []).length;
-        if (openParens > closeParens && !text.includes('//')) {
-            const range = new vscode.Range(i, 0, i, text.length);
-            const diagnostic = new vscode.Diagnostic(
-                range,
-                'Unclosed parenthesis',
-                vscode.DiagnosticSeverity.Error
-            );
-            diagnostics.push(diagnostic);
-        }
 
         // Check for invalid function declarations (missing return type)
         // Only check at indent level 0 (no leading whitespace)

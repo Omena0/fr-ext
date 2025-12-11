@@ -325,8 +325,70 @@
           "include": "#function-call"
         },
         {
+          "include": "#list-literal"
+        },
+        {
+          "include": "#set-literal"
+        },
+        {
           "name": "variable.other.fr",
           "match": "\\b[a-zA-Z_][a-zA-Z0-9_]*\\b"
+        }
+      ]
+    },
+    "list-literal": {
+      "patterns": [
+        {
+          "name": "meta.structure.list.fr",
+          "begin": "\\[",
+          "beginCaptures": {
+            "0": {
+              "name": "punctuation.section.brackets.begin.fr"
+            }
+          },
+          "end": "\\]",
+          "endCaptures": {
+            "0": {
+              "name": "punctuation.section.brackets.end.fr"
+            }
+          },
+          "patterns": [
+            {
+              "include": "#expression"
+            },
+            {
+              "match": ",",
+              "name": "punctuation.separator.comma.fr"
+            }
+          ]
+        }
+      ]
+    },
+    "set-literal": {
+      "patterns": [
+        {
+          "name": "meta.structure.set.fr",
+          "begin": "\\{",
+          "beginCaptures": {
+            "0": {
+              "name": "punctuation.section.brackets.begin.fr"
+            }
+          },
+          "end": "\\}",
+          "endCaptures": {
+            "0": {
+              "name": "punctuation.section.brackets.end.fr"
+            }
+          },
+          "patterns": [
+            {
+              "include": "#expression"
+            },
+            {
+              "match": ",",
+              "name": "punctuation.separator.comma.fr"
+            }
+          ]
         }
       ]
     },
@@ -453,66 +515,21 @@
     "function-declaration": {
       "patterns": [
         {
-          "match": "\\b(void|int|float|str|string|bool|list|dict|set|bytes|any|pyobject|pyobj|function|[A-Z][a-zA-Z0-9_]*)\\s+([a-zA-Z_][a-zA-Z0-9_]*)\\s*\\(([^)]*)\\)",
-          "captures": {
+          "begin": "\\b(void|int|float|str|string|bool|list|dict|set|bytes|any|pyobject|pyobj|function|[A-Z][a-zA-Z0-9_]*)\\s+([a-zA-Z_][a-zA-Z0-9_]*)\\s*\\(",
+          "beginCaptures": {
             "1": {
               "name": "storage.type.function.fr"
             },
             "2": {
               "name": "entity.name.function.fr"
-            },
-            "3": {
-              "patterns": [
-                {
-                  "match": "(void|int|float|str|string|bool|list|dict|set|bytes|any|pyobject|pyobj|function|[A-Z][a-zA-Z0-9_]*)\\s+(\\*\\*)([a-zA-Z_][a-zA-Z0-9_]*)",
-                  "captures": {
-                    "1": {
-                      "name": "storage.type.fr"
-                    },
-                    "2": {
-                      "name": "keyword.operator.unpacking.kwargs.fr"
-                    },
-                    "3": {
-                      "name": "variable.parameter.fr"
-                    }
-                  }
-                },
-                {
-                  "match": "(void|int|float|str|string|bool|list|dict|set|bytes|any|pyobject|pyobj|function|[A-Z][a-zA-Z0-9_]*)\\s+(\\*)([a-zA-Z_][a-zA-Z0-9_]*)",
-                  "captures": {
-                    "1": {
-                      "name": "storage.type.fr"
-                    },
-                    "2": {
-                      "name": "keyword.operator.unpacking.args.fr"
-                    },
-                    "3": {
-                      "name": "variable.parameter.fr"
-                    }
-                  }
-                },
-                {
-                  "match": "(void|int|float|str|string|bool|list|dict|set|bytes|any|pyobject|pyobj|function|[A-Z][a-zA-Z0-9_]*)\\s+([a-zA-Z_][a-zA-Z0-9_]*)",
-                  "captures": {
-                    "1": {
-                      "name": "storage.type.fr"
-                    },
-                    "2": {
-                      "name": "variable.parameter.fr"
-                    }
-                  }
-                },
-                {
-                  "match": ",",
-                  "name": "punctuation.separator.parameter.fr"
-                },
-                {
-                  "match": "[a-zA-Z_][a-zA-Z0-9_]*",
-                  "name": "variable.parameter.fr"
-                }
-              ]
             }
-          }
+          },
+          "end": "\\)",
+          "patterns": [
+            {
+              "include": "#function-parameters"
+            }
+          ]
         }
       ]
     },
@@ -570,12 +587,19 @@
     "function-call": {
       "patterns": [
         {
-          "match": "\\b([A-Z][a-zA-Z0-9_]*)\\s*(?=\\()",
-          "captures": {
+          "name": "meta.function-call.struct.fr",
+          "begin": "\\b([A-Z][a-zA-Z0-9_]*)\\s*\\(",
+          "beginCaptures": {
             "1": {
-              "name": "meta.embedded.line.fr"
+              "name": "entity.name.type.class.fr"
             }
-          }
+          },
+          "end": "\\)",
+          "patterns": [
+            {
+              "include": "#expression"
+            }
+          ]
         },
         {
           "name": "meta.function-call.fr",
@@ -589,18 +613,6 @@
           "patterns": [
             {
               "include": "#expression"
-            },
-            {
-              "include": "#strings"
-            },
-            {
-              "include": "#fstrings"
-            },
-            {
-              "include": "#numbers"
-            },
-            {
-              "include": "#constants"
             }
           ]
         }
