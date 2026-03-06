@@ -65,7 +65,7 @@ export class WorkspaceSymbolProvider implements vscode.WorkspaceSymbolProvider {
             const { text } = line;
 
             // Match function declarations
-            const funcMatch = text.match(/^\s*(void|int|float|str|bool|list|dict|any|pyobject)\s+(\w+)\s*\(/);
+            const funcMatch = text.match(/^\s*(void|int|float|string|str|bool|list|dict|set|bytes|any|pyobject|pyobj)\s+(\w+)\s*\(/);
             if (funcMatch) {
                 symbols.push({
                     name: funcMatch[2],

@@ -83,7 +83,7 @@ export class FrscriptTaskProvider implements vscode.TaskProvider {
             file: relativePath
         };
 
-        const execution = new vscode.ShellExecution(`fr -c "${file.fsPath}" -o "${outputFile}"`);
+        const execution = new vscode.ShellExecution(`fr compile "${file.fsPath}" -o "${outputFile}"`);
 
         const task = new vscode.Task(
             definition,
@@ -145,7 +145,7 @@ export function createBuildCurrentFileCommand(): vscode.Disposable {
         
         const terminal = vscode.window.createTerminal('Frscript Build');
         terminal.show();
-        terminal.sendText(`fr -c "${filePath}" -o "${outputFile}"`);
+        terminal.sendText(`fr compile "${filePath}" -o "${outputFile}"`);
     });
 }
 

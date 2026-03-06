@@ -185,7 +185,7 @@ export class RefactoringProvider {
         const { text } = line;
 
         // Match function with untyped parameters
-        const funcMatch = text.match(/^\s*(void|int|float|str|bool|list|dict|any)\s+(\w+)\s*\(([^)]*)\)/);
+        const funcMatch = text.match(/^\s*(void|int|float|string|str|bool|list|dict|set|bytes|any|pyobject|pyobj)\s+(\w+)\s*\(([^)]*)\)/);
         if (!funcMatch) {
             return null;
         }
@@ -204,7 +204,7 @@ export class RefactoringProvider {
 
         paramList.forEach(param => {
             // Check if already typed
-            if (!param.match(/^(void|int|float|str|bool|list|dict|any|pyobject)\s+\w+$/)) {
+            if (!param.match(/^(void|int|float|string|str|bool|list|dict|set|bytes|any|pyobject|pyobj)\s+\w+$/)) {
                 untypedParams.push(param);
             }
         });

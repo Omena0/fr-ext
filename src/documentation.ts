@@ -18,7 +18,7 @@ export class DocumentationProvider {
         const { text } = line;
 
         // Check if this is a function declaration
-        const funcMatch = text.match(/^\s*(void|int|float|str|string|bool|list|dict|set|bytes|any|pyobject|pyobj|function)\s+(\w+)\s*\(([^)]*)\)/);
+        const funcMatch = text.match(/^\s*(?:const\s+)?(void|int|float|str|string|bool|list|dict|set|bytes|any|pyobject|pyobj|function)\s+(\w+)\s*\(([^)]*)\)/);
         if (!funcMatch) {
             return null;
         }

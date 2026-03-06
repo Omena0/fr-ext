@@ -62,7 +62,7 @@ interface CLinkInfo {
 
 interface CSymbolInfo {
     name: string;
-    type: 'function' | 'struct' | 'macro';
+    type: 'function' | 'struct' | 'macro' | 'enum';
     signature?: string;
     documentation?: string;
 }
@@ -107,7 +107,20 @@ const builtinFunctions: FunctionInfo[] = [
     { name: 'sclose', signature: 'sclose(sock_id: int)', description: 'Close socket', insertText: 'sclose($1)$0' },
     { name: 'py_import', signature: 'py_import(module: str)', description: 'Import a Python module', insertText: 'py_import $1$0' },
     { name: 'py_call', signature: 'py_call(module: str, function: str, ...args) -> any', description: 'Call a Python function', insertText: 'py_call("$1", "$2"$3)$0' },
+    { name: 'py_getattr', signature: 'py_getattr(obj: pyobject, attr: str) -> any', description: 'Get an attribute from a Python object', insertText: 'py_getattr($1, "$2")$0' },
+    { name: 'py_setattr', signature: 'py_setattr(obj: pyobject, attr: str, value: any)', description: 'Set an attribute on a Python object', insertText: 'py_setattr($1, "$2", $3)$0' },
+    { name: 'py_call_method', signature: 'py_call_method(obj: pyobject, method: str, ...args) -> any', description: 'Call a method on a Python object', insertText: 'py_call_method($1, "$2"$3)$0' },
     { name: 'sqrt', signature: 'sqrt(x: float) -> float', description: 'Square root', insertText: 'sqrt($1)$0' },
+    { name: 'sin', signature: 'sin(x: float) -> float', description: 'Sine of x (radians)', insertText: 'sin($1)$0' },
+    { name: 'cos', signature: 'cos(x: float) -> float', description: 'Cosine of x (radians)', insertText: 'cos($1)$0' },
+    { name: 'tan', signature: 'tan(x: float) -> float', description: 'Tangent of x (radians)', insertText: 'tan($1)$0' },
+    { name: 'floor', signature: 'floor(x: float) -> int', description: 'Round down to nearest integer', insertText: 'floor($1)$0' },
+    { name: 'ceil', signature: 'ceil(x: float) -> int', description: 'Round up to nearest integer', insertText: 'ceil($1)$0' },
+    { name: 'abs', signature: 'abs(x: any) -> any', description: 'Absolute value', insertText: 'abs($1)$0' },
+    { name: 'round', signature: 'round(x: float) -> int', description: 'Round to nearest integer', insertText: 'round($1)$0' },
+    { name: 'pow', signature: 'pow(base: any, exp: any) -> any', description: 'Raise base to power of exp', insertText: 'pow($1, $2)$0' },
+    { name: 'min', signature: 'min(a: any, b: any) -> any', description: 'Return the smaller of two values', insertText: 'min($1, $2)$0' },
+    { name: 'max', signature: 'max(a: any, b: any) -> any', description: 'Return the larger of two values', insertText: 'max($1, $2)$0' },
     { name: 'assert', signature: 'assert(condition: bool, message: str = "")', description: 'Assert that a condition is true', insertText: 'assert($1)$0' },
     { name: 'decode', signature: 'decode(data: bytes) -> str', description: 'Decode bytes to string', insertText: 'decode($1)$0' },
     { name: 'encode', signature: 'encode(text: str) -> bytes', description: 'Encode string to bytes', insertText: 'encode($1)$0' },
@@ -116,6 +129,25 @@ const builtinFunctions: FunctionInfo[] = [
     { name: 'strip', signature: 'strip(text: str) -> str', description: 'Remove leading and trailing whitespace', insertText: 'strip($1)$0' },
     { name: 'append', signature: 'append(lst: list, item: any)', description: 'Append an item to the list', insertText: 'append($1, $2)$0' },
     { name: 'pop', signature: 'pop(lst: list) -> any', description: 'Remove and return the last item from the list', insertText: 'pop($1)$0' },
+    { name: 'replace', signature: 'replace(text: str, old: str, new: str) -> str', description: 'Replace occurrences of old with new in text', insertText: 'replace($1, $2, $3)$0' },
+
+    // File system operations
+    { name: 'exists', signature: 'exists(path: str) -> bool', description: 'Check if a file or directory exists', insertText: 'exists($1)$0' },
+    { name: 'isfile', signature: 'isfile(path: str) -> bool', description: 'Check if path is a file', insertText: 'isfile($1)$0' },
+    { name: 'isdir', signature: 'isdir(path: str) -> bool', description: 'Check if path is a directory', insertText: 'isdir($1)$0' },
+    { name: 'listdir', signature: 'listdir(path: str = ".") -> list', description: 'List directory contents', insertText: 'listdir($1)$0' },
+    { name: 'mkdir', signature: 'mkdir(path: str)', description: 'Create a directory', insertText: 'mkdir($1)$0' },
+    { name: 'makedirs', signature: 'makedirs(path: str)', description: 'Create a directory and all parent directories', insertText: 'makedirs($1)$0' },
+    { name: 'remove', signature: 'remove(path: str)', description: 'Delete a file', insertText: 'remove($1)$0' },
+    { name: 'rmdir', signature: 'rmdir(path: str)', description: 'Delete an empty directory', insertText: 'rmdir($1)$0' },
+    { name: 'rename', signature: 'rename(old: str, new: str)', description: 'Rename a file or directory', insertText: 'rename($1, $2)$0' },
+    { name: 'getsize', signature: 'getsize(path: str) -> int', description: 'Get file size in bytes', insertText: 'getsize($1)$0' },
+    { name: 'getcwd', signature: 'getcwd() -> str', description: 'Get current working directory', insertText: 'getcwd()$0' },
+    { name: 'chdir', signature: 'chdir(path: str)', description: 'Change working directory', insertText: 'chdir($1)$0' },
+    { name: 'abspath', signature: 'abspath(path: str) -> str', description: 'Get absolute path', insertText: 'abspath($1)$0' },
+    { name: 'basename', signature: 'basename(path: str) -> str', description: 'Get the base name of a path', insertText: 'basename($1)$0' },
+    { name: 'dirname', signature: 'dirname(path: str) -> str', description: 'Get the directory name of a path', insertText: 'dirname($1)$0' },
+    { name: 'pathjoin', signature: 'pathjoin(...paths: str) -> str', description: 'Join path components', insertText: 'pathjoin($1, $2)$0' },
     
     // Web/WASM Functions - DOM Query
     { name: 'dom_query', signature: 'dom_query(selector: str) -> int', description: 'Query the DOM for an element by CSS selector', insertText: 'dom_query($1)$0', detail: 'DOM Query: Returns element handle or 0 if not found' },
@@ -266,36 +298,65 @@ function parseCImports(document: vscode.TextDocument): { imports: CImportInfo[],
     return { imports, links };
 }
 
-// Parse C symbols from header files (simplified version)
-// In a real implementation, this could use libclang or parse headers more thoroughly
+// Parse C symbols from header files by reading and parsing the actual header
 function parseCSymbols(headerPath: string): CSymbolInfo[] {
-    // For now, return common raylib functions as an example
-    // In production, this would actually parse the header file
     const symbols: CSymbolInfo[] = [];
 
-    if (headerPath.includes('raylib.h')) {
-        // Add common raylib functions
-        symbols.push(
-            { name: 'InitWindow', type: 'function', signature: 'void InitWindow(int width, int height, const char *title)' },
-            { name: 'CloseWindow', type: 'function', signature: 'void CloseWindow(void)' },
-            { name: 'WindowShouldClose', type: 'function', signature: 'bool WindowShouldClose(void)' },
-            { name: 'BeginDrawing', type: 'function', signature: 'void BeginDrawing(void)' },
-            { name: 'EndDrawing', type: 'function', signature: 'void EndDrawing(void)' },
-            { name: 'ClearBackground', type: 'function', signature: 'void ClearBackground(Color color)' },
-            { name: 'DrawText', type: 'function', signature: 'void DrawText(const char *text, int posX, int posY, int fontSize, Color color)' },
-            { name: 'DrawRectangle', type: 'function', signature: 'void DrawRectangle(int posX, int posY, int width, int height, Color color)' },
-            { name: 'DrawCircle', type: 'function', signature: 'void DrawCircle(int centerX, int centerY, float radius, Color color)' },
-            { name: 'IsKeyDown', type: 'function', signature: 'bool IsKeyDown(int key)' },
-            { name: 'IsKeyPressed', type: 'function', signature: 'bool IsKeyPressed(int key)' },
-            { name: 'GetFrameTime', type: 'function', signature: 'float GetFrameTime(void)' },
-            { name: 'SetTargetFPS', type: 'function', signature: 'void SetTargetFPS(int fps)' },
-            { name: 'GetScreenWidth', type: 'function', signature: 'int GetScreenWidth(void)' },
-            { name: 'GetScreenHeight', type: 'function', signature: 'int GetScreenHeight(void)' },
-            { name: 'KEY_W', type: 'macro', signature: '87' },
-            { name: 'KEY_S', type: 'macro', signature: '83' },
-            { name: 'KEY_UP', type: 'macro', signature: '265' },
-            { name: 'KEY_DOWN', type: 'macro', signature: '264' }
-        );
+    let content: string;
+    try {
+        const fs = require('fs');
+        content = fs.readFileSync(headerPath, 'utf-8');
+    } catch {
+        return symbols;
+    }
+
+    // Strip C comments
+    content = content.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
+
+    // Match function declarations: rettype funcname(params);
+    const funcRegex = /^\s*(?:(?:RLAPI|static|inline|extern|__declspec\([^)]*\))\s+)*(\w[\w\s*]*?)\s+(\w+)\s*\(([^)]*)\)\s*;/gm;
+    let match;
+    while ((match = funcRegex.exec(content)) !== null) {
+        const retType = match[1].trim();
+        const name = match[2];
+        const params = match[3].trim();
+        // Skip if it looks like a type definition rather than a function
+        if (['typedef', 'struct', 'enum', 'union'].includes(retType)) { continue; }
+        symbols.push({
+            name,
+            type: 'function',
+            signature: `${retType} ${name}(${params})`
+        });
+    }
+
+    // Match #define MACRO value (simple integer/string macros)
+    const macroRegex = /^\s*#define\s+([A-Z_][A-Z0-9_]*)\s+(\d+|0x[0-9a-fA-F]+|"[^"]*")\s*$/gm;
+    while ((match = macroRegex.exec(content)) !== null) {
+        symbols.push({
+            name: match[1],
+            type: 'macro',
+            signature: match[2]
+        });
+    }
+
+    // Match typedef struct { ... } Name;
+    const structRegex = /typedef\s+struct\s*(?:\w+\s*)?\{[^}]*\}\s*(\w+)\s*;/gs;
+    while ((match = structRegex.exec(content)) !== null) {
+        symbols.push({
+            name: match[1],
+            type: 'struct',
+            signature: `typedef struct ${match[1]}`
+        });
+    }
+
+    // Match typedef enum { ... } Name;
+    const enumRegex = /typedef\s+enum\s*(?:\w+\s*)?\{([^}]*)\}\s*(\w+)\s*;/gs;
+    while ((match = enumRegex.exec(content)) !== null) {
+        symbols.push({
+            name: match[2],
+            type: 'enum',
+            signature: `typedef enum ${match[2]}`
+        });
     }
 
     return symbols;
@@ -1969,7 +2030,7 @@ export function activate(context: vscode.ExtensionContext) {
         }
     });
 
-    // 3. Rename provider
+    // 3. Rename provider (scope-aware)
     const renameProvider = vscode.languages.registerRenameProvider('frscript', {
         provideRenameEdits(document: vscode.TextDocument, position: vscode.Position, newName: string) {
             const wordRange = document.getWordRangeAtPosition(position);
@@ -1977,13 +2038,76 @@ export function activate(context: vscode.ExtensionContext) {
 
             const edit = new vscode.WorkspaceEdit();
             const text = document.getText();
-            const regex = new RegExp(`\\b${word}\\b`, 'g');
-            let match;
 
-            while ((match = regex.exec(text)) !== null) {
-                const pos = document.positionAt(match.index);
-                const range = new vscode.Range(pos, document.positionAt(match.index + word.length));
-                edit.replace(document.uri, range, newName);
+            // Determine if the symbol at position is a function/struct definition (global scope)
+            const currentLine = document.lineAt(position.line).text;
+            const isFuncDef = currentLine.match(new RegExp(`\\b(void|int|float|str|string|bool|list|dict|set|any|pyobject|pyobj|bytes|function)\\s+${word}\\s*\\(`));
+            const isStructDef = currentLine.match(new RegExp(`\\bstruct\\s+${word}\\s*\\{`));
+            const isGlobalScope = isFuncDef || isStructDef;
+
+            if (isGlobalScope) {
+                // Rename across the whole file for function/struct names
+                const regex = new RegExp(`\\b${word}\\b`, 'g');
+                let match;
+                while ((match = regex.exec(text)) !== null) {
+                    const pos = document.positionAt(match.index);
+                    // Skip matches inside string literals
+                    const lineText = document.lineAt(pos.line).text;
+                    const col = pos.character;
+                    const before = lineText.substring(0, col);
+                    const quoteCount = (before.match(/"/g) || []).length;
+                    if (quoteCount % 2 !== 0) { continue; }
+                    const range = new vscode.Range(pos, document.positionAt(match.index + word.length));
+                    edit.replace(document.uri, range, newName);
+                }
+            } else {
+                // Local variable: only rename within the enclosing function scope
+                let scopeStart = 0;
+                let scopeEnd = document.lineCount - 1;
+                let braceDepth = 0;
+
+                // Walk backwards to find function start
+                for (let i = position.line; i >= 0; i--) {
+                    const lineText = document.lineAt(i).text;
+                    for (let j = lineText.length - 1; j >= 0; j--) {
+                        if (lineText[j] === '}') { braceDepth++; }
+                        if (lineText[j] === '{') { braceDepth--; }
+                    }
+                    if (braceDepth < 0) {
+                        scopeStart = i;
+                        break;
+                    }
+                }
+
+                // Walk forward to find matching close brace
+                braceDepth = 0;
+                let foundOpen = false;
+                for (let i = scopeStart; i < document.lineCount; i++) {
+                    const lineText = document.lineAt(i).text;
+                    for (const ch of lineText) {
+                        if (ch === '{') { braceDepth++; foundOpen = true; }
+                        if (ch === '}') { braceDepth--; }
+                    }
+                    if (foundOpen && braceDepth <= 0) {
+                        scopeEnd = i;
+                        break;
+                    }
+                }
+
+                // Rename only within the scope
+                for (let i = scopeStart; i <= scopeEnd; i++) {
+                    const lineText = document.lineAt(i).text;
+                    const regex = new RegExp(`\\b${word}\\b`, 'g');
+                    let match;
+                    while ((match = regex.exec(lineText)) !== null) {
+                        // Skip matches inside string literals
+                        const before = lineText.substring(0, match.index);
+                        const quoteCount = (before.match(/"/g) || []).length;
+                        if (quoteCount % 2 !== 0) { continue; }
+                        const range = new vscode.Range(i, match.index, i, match.index + word.length);
+                        edit.replace(document.uri, range, newName);
+                    }
+                }
             }
 
             return edit;
@@ -2105,14 +2229,92 @@ export function activate(context: vscode.ExtensionContext) {
             return undefined;
         },
 
-        provideCallHierarchyOutgoingCalls(item: vscode.CallHierarchyItem) {
-            // Find what this function calls
-            return [];
+        async provideCallHierarchyOutgoingCalls(item: vscode.CallHierarchyItem): Promise<vscode.CallHierarchyOutgoingCall[]> {
+            const document = await vscode.workspace.openTextDocument(item.uri);
+            const symbols = parseSymbols(document);
+            const funcNames = new Set(symbols.filter(s => s.type === 'function').map(s => s.name));
+
+            // Find the body of this function (between its { and matching })
+            const startLine = item.range.start.line;
+            let braceDepth = 0;
+            let bodyStart = startLine;
+            let bodyEnd = document.lineCount - 1;
+            let foundOpen = false;
+
+            for (let i = startLine; i < document.lineCount; i++) {
+                for (const ch of document.lineAt(i).text) {
+                    if (ch === '{') { braceDepth++; foundOpen = true; }
+                    if (ch === '}') { braceDepth--; }
+                }
+                if (i === startLine && !foundOpen) { continue; }
+                if (foundOpen && braceDepth <= 0) { bodyEnd = i; break; }
+            }
+
+            const calls: vscode.CallHierarchyOutgoingCall[] = [];
+            const seen = new Set<string>();
+            const callRegex = /\b([a-zA-Z_][a-zA-Z0-9_]*)\s*\(/g;
+
+            for (let i = bodyStart + 1; i < bodyEnd; i++) {
+                const lineText = document.lineAt(i).text;
+                let match;
+                while ((match = callRegex.exec(lineText)) !== null) {
+                    const name = match[1];
+                    if (name === item.name || seen.has(name) || !funcNames.has(name)) { continue; }
+                    seen.add(name);
+                    const targetSym = symbols.find(s => s.name === name && s.type === 'function');
+                    if (!targetSym) { continue; }
+                    const targetLine = document.lineAt(targetSym.line);
+                    const targetItem = new vscode.CallHierarchyItem(
+                        vscode.SymbolKind.Function, name, targetSym.documentation || '',
+                        document.uri, targetLine.range, targetLine.range
+                    );
+                    const fromRange = new vscode.Range(i, match.index, i, match.index + name.length);
+                    calls.push(new vscode.CallHierarchyOutgoingCall(targetItem, [fromRange]));
+                }
+            }
+            return calls;
         },
 
-        provideCallHierarchyIncomingCalls(item: vscode.CallHierarchyItem) {
-            // Find who calls this function
-            return [];
+        async provideCallHierarchyIncomingCalls(item: vscode.CallHierarchyItem): Promise<vscode.CallHierarchyIncomingCall[]> {
+            const document = await vscode.workspace.openTextDocument(item.uri);
+            const symbols = parseSymbols(document);
+            const funcs = symbols.filter(s => s.type === 'function');
+            const calls: vscode.CallHierarchyIncomingCall[] = [];
+            const callRegex = new RegExp(`\\b${item.name}\\s*\\(`, 'g');
+
+            for (const func of funcs) {
+                if (func.name === item.name) { continue; }
+                // Find body of this function
+                let braceDepth = 0;
+                let bodyEnd = document.lineCount - 1;
+                let foundOpen = false;
+                for (let i = func.line; i < document.lineCount; i++) {
+                    for (const ch of document.lineAt(i).text) {
+                        if (ch === '{') { braceDepth++; foundOpen = true; }
+                        if (ch === '}') { braceDepth--; }
+                    }
+                    if (foundOpen && braceDepth <= 0) { bodyEnd = i; break; }
+                }
+
+                const ranges: vscode.Range[] = [];
+                for (let i = func.line + 1; i < bodyEnd; i++) {
+                    const lineText = document.lineAt(i).text;
+                    let match;
+                    while ((match = callRegex.exec(lineText)) !== null) {
+                        ranges.push(new vscode.Range(i, match.index, i, match.index + item.name.length));
+                    }
+                }
+
+                if (ranges.length > 0) {
+                    const callerLine = document.lineAt(func.line);
+                    const callerItem = new vscode.CallHierarchyItem(
+                        vscode.SymbolKind.Function, func.name, func.documentation || '',
+                        document.uri, callerLine.range, callerLine.range
+                    );
+                    calls.push(new vscode.CallHierarchyIncomingCall(callerItem, ranges));
+                }
+            }
+            return calls;
         }
     });
 

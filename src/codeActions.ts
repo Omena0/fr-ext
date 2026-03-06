@@ -140,7 +140,7 @@ export class EnhancedCodeActionProvider implements vscode.CodeActionProvider {
 
         // Generate documentation
         const line = document.lineAt(range.start.line);
-        if (line.text.match(/^\s*(void|int|float|str|bool|list|dict|any)\s+\w+\s*\(/)) {
+        if (line.text.match(/^\s*(void|int|float|string|str|bool|list|dict|set|bytes|any|pyobject|pyobj)\s+\w+\s*\(/)) {
             const genDoc = new vscode.CodeAction(
                 'Generate documentation',
                 vscode.CodeActionKind.Source
@@ -246,7 +246,53 @@ export function createSortMembersCommand(): vscode.Disposable {
             return;
         }
 
-        vscode.window.showInformationMessage('Sort members feature coming soon!');
+        const document = editor.document;
+        const edit = new vscode.WorkspaceEdit();
+        let sorted = false;
+
+        // Sort struct fields within each struct body
+        const structRegex = /^\s*struct\s+\w+\s*\{/;
+        for (let i = 0; i < document.lineCount; i++) {
+            if (!structRegex.test(document.lineAt(i).text)) { continue; }
+
+            const structStart = i;
+            let braceDepth = 0;
+            let structEnd = i;
+            for (let j = i; j < document.lineCount; j++) {
+                for (const ch of document.lineAt(j).text) {
+                    if (ch === '{') { braceDepth++; }
+                    if (ch === '}') { braceDepth--; }
+                }
+                if (braceDepth <= 0) { structEnd = j; break; }
+            }
+
+            // Collect field lines (between { and })
+            const fieldLines: string[] = [];
+            for (let j = structStart + 1; j < structEnd; j++) {
+                const line = document.lineAt(j).text;
+                if (line.trim().length > 0) {
+                    fieldLines.push(line);
+                }
+            }
+
+            if (fieldLines.length > 1) {
+                const sortedFields = [...fieldLines].sort((a, b) => a.trim().localeCompare(b.trim()));
+                if (sortedFields.some((f, idx) => f !== fieldLines[idx])) {
+                    const range = new vscode.Range(structStart + 1, 0, structEnd, 0);
+                    edit.replace(document.uri, range, sortedFields.join('\n') + '\n');
+                    sorted = true;
+                }
+            }
+
+            i = structEnd;
+        }
+
+        if (sorted) {
+            await vscode.workspace.applyEdit(edit);
+            vscode.window.showInformationMessage('Members sorted');
+        } else {
+            vscode.window.showInformationMessage('Nothing to sort');
+        }
     });
 }
 
